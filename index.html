@@ -1,0 +1,2492 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1e2435" id="themeColorMeta">
+<meta name="color-scheme" content="light dark">
+
+<!-- PWA manifest -->
+<link rel="manifest" href="manifest.json">
+
+<!-- iOS PWA support -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Trešeta">
+<meta name="mobile-web-app-capable" content="yes">
+
+<!-- App icons -->
+<link rel="icon" type="image/png" sizes="64x64" href="favicon-64.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icon-152.png">
+<link rel="apple-touch-icon" sizes="167x167" href="icon-167.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+
+<title>Trešeta</title>
+<script>
+// Učitaj temu odmah, prije renderiranja, da nema bljeska
+(function(){
+  try {
+    var t = localStorage.getItem('treseta_theme') || 'dark';
+    if (t === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light');
+      var meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', '#f0eee8');
+    } else {
+      // dark default - meta već stavljen na #1e2435 u <head>
+    }
+  } catch(e) {}
+})();
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Caveat:wght@600&family=Inter:wght@400;500;600;700&display=swap');
+
+/* Tema se kontrolira preko data-theme atributa na <html> */
+:root { color-scheme: dark; }
+html[data-theme="light"] { color-scheme: light; }
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+/* Default = TAMNA (Panini-style) tema */
+:root {
+  --bg:        #1e2435;
+  --bg-soft:   #262d42;
+  --card:      #2e3650;
+  --border:    #424a66;
+  --border-soft: #353d57;
+  --text:      #ffffff;
+  --dim:       #b0bacf;
+  --faint:     #7a85a0;
+  --red:       #ff4d2e;     /* accent */
+  --green:     #2ecc71;
+  --gold:      #ffc54d;
+  --danger:    #ff4d2e;
+  --radius:    14px;
+  --sh:        0 2px 8px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.2);
+  --sh-lg:     0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
+  --bg-grad:   radial-gradient(ellipse at top, rgba(255,77,46,0.10) 0%, transparent 50%),
+               radial-gradient(ellipse at bottom right, rgba(77,166,255,0.06) 0%, transparent 50%);
+}
+
+/* SVIJETLA tema */
+html[data-theme="light"] {
+  --bg:        #f0eee8;
+  --bg-soft:   #e8e5dc;
+  --card:      #ffffff;
+  --border:    #d4cfc1;
+  --border-soft: #e0dbcc;
+  --text:      #1c1a17;
+  --dim:       #5d5448;
+  --faint:     #a39a87;
+  --red:       #d63a1f;
+  --green:     #1a7a4a;
+  --gold:      #b87a1a;
+  --danger:    #c0392b;
+  --sh:        0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --sh-lg:     0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+  --bg-grad:   radial-gradient(ellipse at top, rgba(214,58,31,0.06) 0%, transparent 50%),
+               radial-gradient(ellipse at bottom right, rgba(184,122,26,0.05) 0%, transparent 50%);
+}
+
+html { height: 100%; }
+
+body {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-grad), var(--bg);
+  color: var(--text);
+  font-family: 'Outfit', 'Inter', sans-serif;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* ======================== LAYOUT ======================== */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ======================== HEADER ======================== */
+.hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  height: 60px;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+
+.hdr-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 3px;
+  color: var(--text);
+  line-height: 1;
+}
+.hdr-title .accent { color: var(--red); }
+
+.hdr-right { display: flex; align-items: center; gap: 10px; }
+
+.hdr-round {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 1px;
+  padding: 6px 10px;
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent);
+  border-radius: 8px;
+  line-height: 1;
+}
+
+.icon-btn {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--sh);
+  position: relative;
+  transition: transform 0.18s ease;
+}
+.icon-btn:active { opacity: 0.7; transform: scale(0.94); }
+.icon-btn[data-count]:not([data-count=""])::after {
+  content: attr(data-count);
+  position: absolute;
+  top: -4px; right: -4px;
+  min-width: 18px; height: 18px;
+  padding: 0 5px;
+  background: var(--red);
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--red) 50%, transparent);
+}
+
+/* ======================== SCOREBOARD ======================== */
+.scoreboard {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px 6px;
+  flex-shrink: 0;
+}
+.scoreboard.t2 { grid-template-columns: 1fr 1fr; }
+.scoreboard.t3 { grid-template-columns: 1fr 1fr 1fr; }
+.scoreboard.t4 { grid-template-columns: 1fr 1fr; }
+
+.score-card {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--card) 85%, white 8%) 0%, var(--card) 100%);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 12px 10px;
+  box-shadow: var(--sh);
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.18s ease;
+}
+.score-card:active { transform: scale(0.98); }
+.score-card.leading {
+  border-color: var(--red);
+  box-shadow: 0 0 0 1px var(--red), 0 4px 14px color-mix(in srgb, var(--red) 28%, transparent);
+}
+.score-card.winning {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px var(--gold), 0 6px 22px color-mix(in srgb, var(--gold) 40%, transparent);
+}
+.score-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: transparent;
+  transition: background 0.2s;
+}
+.score-card.leading::before { background: var(--red); }
+.score-card.winning::before { background: linear-gradient(90deg, var(--gold), var(--red)); }
+
+.sc-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--dim);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 3px;
+}
+.sc-score {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 64px;
+  line-height: 1;
+  color: var(--text);
+  letter-spacing: 1px;
+}
+.score-card.leading .sc-score { color: var(--red); }
+.score-card.winning .sc-score { color: var(--gold); }
+.scoreboard.t3 .sc-score { font-size: 48px; }
+.scoreboard.t4 .sc-score { font-size: 52px; }
+.sc-of {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--faint);
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+.sc-match {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold);
+  margin-top: 4px;
+  letter-spacing: 0.5px;
+}
+
+.progress {
+  margin-top: 7px;
+  height: 5px;
+  background: var(--bg-soft);
+  border-radius: 100px;
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--red) 0%, var(--gold) 100%);
+  border-radius: 100px;
+  transition: width 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--red) 40%, transparent);
+}
+.score-card.leading .progress-fill { background: linear-gradient(90deg, var(--red) 0%, var(--gold) 100%); }
+.score-card.winning .progress-fill { background: var(--gold); }
+
+/* ======================== ROUND INPUT ======================== */
+.round-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0 12px;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.section-label {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--dim);
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  margin: 8px 0 6px;
+}
+
+/* Punti inputs */
+.punti-row {
+  display: grid;
+  gap: 8px;
+}
+.punti-row.t2 { grid-template-columns: 1fr 1fr; }
+.punti-row.t3 { grid-template-columns: 1fr 1fr 1fr; }
+.punti-row.t4 { grid-template-columns: 1fr 1fr; }
+
+.punti-field {
+  position: relative;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--card) 85%, white 8%) 0%, var(--card) 100%);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px 10px;
+  cursor: text;
+  box-shadow: var(--sh);
+  transition: border-color 0.15s, box-shadow 0.2s;
+}
+.punti-field:focus-within {
+  border-color: var(--red);
+  box-shadow: 0 0 0 1px var(--red), 0 4px 14px color-mix(in srgb, var(--red) 28%, transparent);
+}
+
+.pf-akuza-badge {
+  position: absolute;
+  top: 8px; right: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--faint);
+  background: var(--bg-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: 20px;
+  padding: 3px 9px;
+  cursor: pointer;
+  line-height: 1.3;
+  transition: transform 0.15s, background 0.15s, color 0.15s, border-color 0.15s;
+}
+.pf-akuza-badge:active { transform: scale(0.92); }
+.pf-akuza-badge.has {
+  color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 14%, transparent);
+  border-color: color-mix(in srgb, var(--gold) 35%, transparent);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--gold) 25%, transparent);
+}
+
+.pf-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--dim);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 3px;
+}
+.pf-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 48px;
+  line-height: 1;
+  color: var(--text);
+  outline: none;
+  letter-spacing: 1px;
+  -moz-appearance: textfield;
+  padding: 0;
+}
+.punti-row.t3 .pf-input { font-size: 36px; }
+.punti-row.t4 .pf-input { font-size: 40px; }
+.pf-input::-webkit-inner-spin-button,
+.pf-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.pf-input::placeholder { color: var(--faint); }
+
+/* Sum hint */
+.sum-hint {
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 4px 0 0;
+  color: var(--dim);
+  min-height: 18px;
+}
+.sum-hint.ok    { color: var(--green); }
+.sum-hint.over  { color: var(--danger); }
+.sum-hint.under { color: var(--red); }
+
+/* Akuzi & history row */
+.action-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 8px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--card) 85%, white 8%) 0%, var(--card) 100%);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: var(--sh);
+  transition: all 0.15s;
+  letter-spacing: 1px;
+  width: 100%;
+}
+.action-btn:active { transform: scale(0.96); opacity: 0.85; }
+.action-btn .ab-icon { font-size: 20px; }
+.action-btn.has-data {
+  border-color: var(--gold);
+  color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold), 0 4px 12px color-mix(in srgb, var(--gold) 25%, transparent);
+}
+
+/* Akuže sekcija */
+.akuze-section {
+  margin-top: 10px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--card) 85%, white 8%) 0%, var(--card) 100%);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--sh);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.akuze-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px 6px;
+  border-bottom: 1px solid var(--border);
+}
+.akuze-edit-btn {
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--red);
+  background: color-mix(in srgb, var(--red) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--red) 30%, transparent);
+  border-radius: 9px;
+  padding: 7px 14px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: transform 0.15s;
+}
+.akuze-edit-btn:active { transform: scale(0.94); opacity: 0.8; }
+.akuze-teams {
+  display: block;
+}
+.akuze-team-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  min-height: 38px;
+}
+.akuze-team-row:last-child { border-bottom: none; }
+.atr-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--dim);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  flex: 0 0 auto;
+  min-width: 70px;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.atr-items {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-height: 22px;
+  align-items: center;
+}
+.atr-none {
+  font-size: 14px;
+  color: var(--faint);
+  font-style: italic;
+}
+.atr-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--red) 18%, transparent) 0%, color-mix(in srgb, var(--red) 8%, transparent) 100%);
+  border: 1px solid color-mix(in srgb, var(--red) 30%, transparent);
+  border-radius: 18px;
+  padding: 3px 11px 3px 9px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--red);
+  line-height: 1.2;
+  letter-spacing: 0.3px;
+}
+.atr-chip .chip-cnt {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  min-width: 12px;
+  text-align: center;
+}
+.atr-total {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gold);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Bottom buttons */
+.bottom-btns {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 8px;
+  padding: 6px 12px 10px;
+  flex-shrink: 0;
+}
+
+.btn {
+  padding: 18px;
+  border: none;
+  border-radius: var(--radius);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.btn:active { transform: scale(0.96); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-ghost {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--card) 85%, white 8%) 0%, var(--card) 100%);
+  color: var(--dim);
+  border: 1.5px solid var(--border);
+  box-shadow: var(--sh);
+}
+.btn-primary {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--red) 90%, white 10%) 0%, var(--red) 100%);
+  color: #fff;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--red) 45%, transparent);
+  font-size: 17px;
+}
+
+/* ======================== SHEET (drawer) ======================== */
+.sheet-overlay {
+  position: fixed; inset: 0;
+  background: rgba(20,18,14,0.45);
+  backdrop-filter: blur(4px);
+  z-index: 80;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+.sheet-overlay.open { opacity: 1; pointer-events: all; }
+
+.sheet {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  max-height: 88dvh;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--card) 85%, white 6%) 0%, var(--card) 100%);
+  border-radius: 20px 20px 0 0;
+  box-shadow: var(--sh-lg);
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.34,1.2,0.64,1);
+  border-top: 1px solid var(--border);
+}
+.sheet.open { transform: translateY(0); }
+
+.sheet-handle {
+  width: 40px; height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 12px auto 0;
+  flex-shrink: 0;
+}
+.sheet-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px 12px;
+  flex-shrink: 0;
+}
+.sheet-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 30px;
+  letter-spacing: 2px;
+  color: var(--text);
+}
+.sheet-title .accent { color: var(--red); }
+.sheet-close {
+  width: 40px; height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-soft);
+  color: var(--text);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s;
+}
+.sheet-close:active { transform: scale(0.92); }
+
+.sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 16px 24px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ======================== AKUŽI ======================== */
+.akuz-team-tabs {
+  display: flex; gap: 4px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 3px;
+  margin-bottom: 12px;
+}
+.akuz-tab {
+  flex: 1;
+  padding: 12px 8px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--dim);
+  cursor: pointer;
+  transition: all 0.15s;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.akuz-tab.active {
+  background: var(--card);
+  color: var(--red);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px var(--red);
+}
+
+.akuz-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  margin-bottom: 10px;
+  gap: 12px;
+}
+.ai-info { flex: 1; min-width: 0; }
+.ai-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 3px;
+  line-height: 1.2;
+}
+.ai-hint {
+  font-size: 12px;
+  color: var(--dim);
+  line-height: 1.3;
+}
+.ai-pts {
+  display: inline-block;
+  background: var(--red);
+  color: white;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 20px;
+  margin-top: 5px;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--red) 35%, transparent);
+}
+
+.ai-counter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.ai-btn {
+  width: 44px; height: 44px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  line-height: 1;
+  transition: all 0.15s ease;
+}
+.ai-btn:active {
+  background: var(--red);
+  color: white;
+  border-color: var(--red);
+  transform: scale(0.92);
+  box-shadow: 0 0 0 1px var(--red), 0 2px 12px color-mix(in srgb, var(--red) 50%, transparent);
+}
+.ai-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: var(--bg-soft);
+}
+.ai-btn:disabled:active { background: var(--bg-soft); color: var(--text); border-color: var(--border); transform: none; box-shadow: none; }
+.akuz-limit-info {
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--gold) 25%, transparent);
+  color: var(--gold);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.akuz-limit-info.full {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 30%, transparent);
+  color: var(--danger);
+}
+.akuz-limit-info small {
+  display: block;
+  font-weight: 500;
+  color: var(--dim);
+  font-size: 10.5px;
+  margin-top: 2px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.ai-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 26px;
+  color: var(--red);
+  min-width: 28px;
+  text-align: center;
+  line-height: 1;
+}
+
+/* ======================== HISTORY ======================== */
+.hist-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+.hist-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--red);
+  min-width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.hist-content { flex: 1; min-width: 0; }
+.hist-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 14px;
+  padding: 2px 0;
+}
+.hist-name { color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hist-pts {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: var(--text);
+  flex-shrink: 0;
+}
+.hist-akuzi {
+  font-size: 11px;
+  color: var(--faint);
+  font-style: italic;
+  margin-top: 3px;
+  letter-spacing: 0.3px;
+}
+.hist-del {
+  width: 36px; height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--danger);
+  font-size: 15px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+.hist-del:active { transform: scale(0.92); }
+.hist-total {
+  background: color-mix(in srgb, var(--red) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--red) 25%, transparent);
+  font-weight: 700;
+}
+.hist-total .hist-num {
+  font-size: 13px;
+  letter-spacing: 1px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.empty-hist {
+  text-align: center;
+  padding: 40px 16px;
+  color: var(--faint);
+  font-size: 14px;
+  letter-spacing: 0.5px;
+}
+
+/* ======================== MODAL ======================== */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(6px);
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.open { display: flex; }
+#confirmModal { z-index: 200; }
+
+.modal {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--card) 80%, white 8%) 0%, var(--card) 100%);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 24px 20px;
+  width: 100%;
+  max-width: 360px;
+  max-height: 88dvh;
+  overflow-y: auto;
+  box-shadow: var(--sh-lg);
+}
+.modal-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 2.5px;
+  color: var(--text);
+  margin-bottom: 18px;
+  line-height: 1;
+}
+.modal-title .accent { color: var(--red); }
+.modal-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin: 18px 0 10px;
+}
+.modal input[type="text"], .modal input[type="number"] {
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--bg-soft);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  outline: none;
+  margin-bottom: 8px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.modal input:focus {
+  border-color: var(--red);
+  box-shadow: 0 0 0 1px var(--red);
+}
+
+.setup-num-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.setup-num-field {
+  background: var(--bg-soft);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 12px 6px;
+}
+.setup-num-field .pf-label { margin-bottom: 2px; }
+.setup-num-field input[type="number"] {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 2px 0 0;
+  margin-bottom: 0;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: 1px;
+}
+.setup-num-field input[type="number"]:focus { box-shadow: none; }
+
+.pair-group {
+  background: var(--bg-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 10px 10px 4px;
+  margin-bottom: 10px;
+}
+.pair-group-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--red);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.name-field { position: relative; margin-bottom: 8px; }
+.name-field input { margin-bottom: 0 !important; }
+.name-dropdown {
+  display: none;
+  position: absolute;
+  left: 0; right: 0; top: calc(100% + 4px);
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--sh-lg);
+  z-index: 30;
+  overflow: hidden;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.name-dropdown.open { display: block; }
+.name-opt {
+  padding: 12px 16px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-soft);
+}
+.name-opt:last-child { border-bottom: none; }
+.name-opt:active { background: var(--bg-soft); }
+
+.seg {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  padding: 4px;
+  border-radius: 12px;
+  margin-bottom: 14px;
+}
+.seg-btn {
+  flex: 1;
+  padding: 13px 4px;
+  border: none;
+  background: transparent;
+  border-radius: 9px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--dim);
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+  white-space: nowrap;
+}
+.seg-btn.active {
+  background: var(--card);
+  color: var(--red);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25), 0 0 0 1px var(--red);
+}
+
+.modal-p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--dim);
+  margin-bottom: 12px;
+}
+.modal-p strong { color: var(--text); }
+.modal-p small { font-size: 12px; color: var(--faint); display: block; margin-top: 3px; }
+
+.modal-btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 18px;
+}
+.modal-btns.single { grid-template-columns: 1fr; }
+.modal-btns.three { grid-template-columns: 1fr 1fr 1fr; }
+
+.m-btn {
+  padding: 16px;
+  border: none;
+  border-radius: 12px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.m-btn:active { transform: scale(0.96); }
+.m-btn-ghost {
+  background: var(--bg-soft);
+  color: var(--text);
+  border: 1.5px solid var(--border);
+}
+.m-btn-red {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--red) 90%, white 10%) 0%, var(--red) 100%);
+  color: white;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--red) 40%, transparent);
+}
+.m-btn-wide { grid-column: span 2; }
+
+.theme-toggle-wrap {
+  background: var(--bg-soft);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.theme-toggle-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.theme-seg {
+  background: var(--card);
+  border: 1px solid var(--border-soft);
+}
+
+/* Saved list */
+.saved-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+.saved-info { flex: 1; min-width: 0; }
+.saved-name { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.saved-meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--faint); }
+.sl-btn { width: 40px; height: 40px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: transform 0.15s; }
+.sl-btn:active { transform: scale(0.92); }
+.sl-btn.r { color: var(--red); }
+.sl-btn.d { color: var(--danger); }
+
+/* Toast */
+.toast {
+  position: fixed;
+  top: 70px; left: 50%;
+  transform: translateX(-50%) translateY(-140px);
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 13px 22px;
+  border-radius: 26px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  z-index: 200;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  white-space: nowrap;
+  box-shadow: var(--sh-lg);
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* Winner badge */
+.winner-block { text-align: center; padding: 14px 0 18px; }
+.winner-label { font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; color: var(--faint); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 5px; }
+.winner-name { font-family: 'Bebas Neue', sans-serif; font-size: 44px; letter-spacing: 2px; color: var(--text); line-height: 1.1; }
+.winner-score { font-family: 'Bebas Neue', sans-serif; font-size: 76px; color: var(--gold); line-height: 1; text-shadow: 0 0 24px color-mix(in srgb, var(--gold) 50%, transparent); }
+.winner-score-caption { font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--faint); margin-top: -4px; }
+
+/* Rules */
+.rule-row {
+  padding: 14px 16px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  margin-bottom: 10px;
+}
+.rule-head { font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px; letter-spacing: 0.3px; }
+.rule-body { font-size: 13px; color: var(--dim); line-height: 1.55; }
+
+/* ======================== SPLASH / NASLOVNICA ======================== */
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  background: var(--bg-grad), var(--bg);
+  cursor: pointer;
+  opacity: 1;
+  transition: opacity 0.5s ease;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.splash.hide { opacity: 0; pointer-events: none; }
+
+.splash-cards {
+  width: 100%;
+  display: block;
+  filter: drop-shadow(6px 8px 14px rgba(0,0,0,0.35));
+}
+
+.splash-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 64px;
+  letter-spacing: 5px;
+  color: var(--text);
+  line-height: 0.9;
+  text-transform: uppercase;
+  text-align: center;
+}
+.splash-title .accent { color: var(--red); }
+
+.splash-craft {
+  font-family: 'Caveat', cursive;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--dim);
+  letter-spacing: 0.5px;
+  margin-top: -8px;
+}
+.splash-craft .accent { color: var(--gold); }
+
+.splash-hint {
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-top: 6px;
+  animation: splashPulse 1.8s ease-in-out infinite;
+}
+@keyframes splashPulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
+</style>
+</head>
+<body>
+
+<!-- ====== SPLASH / NASLOVNICA ====== -->
+<div class="splash" id="splash">
+  <img class="splash-cards" src="cards.png" alt="Četiri asa — trešeta karte">
+  <div class="splash-title">TRE<span class="accent">ŠETA</span></div>
+  <div class="splash-craft">crafted by <span class="accent">Danijel.AI</span></div>
+  <div class="splash-hint">Dodirni za početak</div>
+</div>
+
+<div id="app">
+
+  <!-- HEADER -->
+  <div class="hdr">
+    <div>
+      <div class="hdr-title">TREŠE<span class="accent">TA</span></div>
+    </div>
+    <div class="hdr-right">
+      <span class="hdr-round" id="hdrRound">R1</span>
+      <button class="icon-btn" id="historyBtn" title="Povijest">📋</button>
+      <button class="icon-btn" id="menuBtn" title="Meni">☰</button>
+    </div>
+  </div>
+
+  <!-- SCOREBOARD -->
+  <div class="scoreboard t2" id="scoreboard"></div>
+
+  <!-- ROUND INPUT -->
+  <div class="round-panel">
+    <div class="section-label">Punte ove runde <span style="text-transform:none; letter-spacing:0; font-weight:600; color:var(--faint);">· dodirni ⊕ za akuže</span></div>
+    <div class="punti-row t2" id="puntiRow"></div>
+    <div class="sum-hint" id="sumHint"></div>
+  </div>
+
+  <!-- BOTTOM BUTTONS -->
+  <div class="bottom-btns">
+    <button class="btn btn-ghost" id="resetBtn">Poništi</button>
+    <button class="btn btn-primary" id="addBtn">Spremi rundu →</button>
+  </div>
+
+</div>
+
+<!-- ====== HISTORY SHEET ====== -->
+<div class="sheet-overlay" id="histOverlay"></div>
+<div class="sheet" id="histSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-hdr">
+    <div class="sheet-title">POVIJ<span class="accent">EST</span></div>
+    <button class="sheet-close" id="histClose">✕</button>
+  </div>
+  <div class="sheet-body" id="histBody"></div>
+</div>
+
+<!-- ====== SETUP MODAL ====== -->
+<div class="modal-overlay" id="setupModal">
+  <div class="modal">
+    <div class="modal-title">NOVA PAR<span class="accent">TIJA</span></div>
+    <div class="modal-label">Broj igrača</div>
+    <div class="seg" id="modeSegs">
+      <button class="seg-btn" data-m="2">2</button>
+      <button class="seg-btn" data-m="3">3</button>
+      <button class="seg-btn" data-m="4">4</button>
+      <button class="seg-btn active" data-m="pairs">2 Para</button>
+    </div>
+    <div class="modal-label" id="namesLabel">Imena ekipa</div>
+    <div id="setupNames"></div>
+    <div class="modal-label">Cilj i broj partija</div>
+    <div class="setup-num-row">
+      <div class="setup-num-field">
+        <div class="pf-label">Cilj (bodova)</div>
+        <input type="number" id="targetInput" value="41" min="11" max="99" inputmode="numeric">
+      </div>
+      <div class="setup-num-field">
+        <div class="pf-label">Broj partija</div>
+        <input type="number" id="winsInput" value="1" min="1" max="21" inputmode="numeric">
+      </div>
+    </div>
+    <div class="modal-btns" style="margin-top:20px;">
+      <button class="m-btn m-btn-ghost" id="setupCancelBtn">Odustani</button>
+      <button class="m-btn m-btn-red" id="startBtn">Započni partiju</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== MENU MODAL ====== -->
+<div class="modal-overlay" id="menuModal">
+  <div class="modal">
+    <div class="modal-title">ME<span class="accent">NI</span></div>
+    <div class="modal-btns single">
+      <button class="m-btn m-btn-red" id="newGameBtn" style="margin-bottom:8px;">Nova partija</button>
+      <button class="m-btn m-btn-ghost" id="pauseBtn" style="margin-bottom:8px;">⏸ Pauziraj partiju</button>
+      <button class="m-btn m-btn-ghost" id="loadBtn" style="margin-bottom:8px;">▶ Nastavi pauziranu partiju</button>
+      <button class="m-btn m-btn-ghost" id="saveBtn" style="margin-bottom:8px;">Spremi partiju (naziv)</button>
+      <button class="m-btn m-btn-ghost" id="matchHistBtn" style="margin-bottom:8px;">Povijest odigranih partija</button>
+      <button class="m-btn m-btn-ghost" id="rulesBtn" style="margin-bottom:8px;">Pravila i akuže</button>
+      <div class="theme-toggle-wrap" style="margin-bottom:8px;">
+        <div class="theme-toggle-label">Tema</div>
+        <div class="seg theme-seg" id="themeSegs" style="margin-bottom:0;">
+          <button class="seg-btn" data-theme="light">☀️ Svijetla</button>
+          <button class="seg-btn" data-theme="dark">🌙 Tamna</button>
+        </div>
+      </div>
+      <button class="m-btn m-btn-ghost" id="menuCloseBtn">Zatvori</button>
+    </div>
+    <div style="text-align:center; margin-top:14px; font-size:11px; color:var(--faint); letter-spacing:0.5px;">verzija <span id="appVersionLabel"></span></div>
+  </div>
+</div>
+
+<!-- ====== CONFIRM MODAL ====== -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal">
+    <div class="modal-title" id="confirmTitle">Potvrda</div>
+    <p class="modal-p" id="confirmMsg"></p>
+    <div id="confirmInputWrap" style="display:none; margin-bottom:4px;">
+      <input type="text" id="confirmInput" placeholder="Naziv" maxlength="32">
+    </div>
+    <div class="modal-btns" id="confirmBtns">
+      <button class="m-btn m-btn-ghost" id="confirmExtra" style="display:none;">Pauziraj</button>
+      <button class="m-btn m-btn-ghost" id="confirmNo">Odustani</button>
+      <button class="m-btn m-btn-red" id="confirmYes">Potvrdi</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== LOAD MODAL ====== -->
+<div class="modal-overlay" id="loadModal">
+  <div class="modal">
+    <div class="modal-title">NASTA<span class="accent">VI</span></div>
+    <div id="savedList" style="margin-bottom:12px;"></div>
+    <button class="m-btn m-btn-ghost" style="width:100%;" id="loadClose">Zatvori</button>
+  </div>
+</div>
+
+<!-- ====== POVIJEST PARTIJA MODAL ====== -->
+<div class="modal-overlay" id="matchHistModal">
+  <div class="modal">
+    <div class="modal-title">POVIJ<span class="accent">EST</span></div>
+    <div id="matchHistList" style="margin-bottom:12px;"></div>
+    <button class="m-btn m-btn-ghost" style="width:100%;" id="matchHistClose">Zatvori</button>
+  </div>
+</div>
+
+<!-- ====== RULES MODAL ====== -->
+<div class="modal-overlay" id="rulesModal">
+  <div class="modal">
+    <div class="modal-title">PRAVI<span class="accent">LA</span></div>
+    <div class="rule-row">
+      <div class="rule-head">Bodovanje karata</div>
+      <div class="rule-body">
+        <strong>As</strong> = 1 bod<br>
+        <strong>2, 3, Kralj, Konj, Fant</strong> = 1/3 boda<br>
+        <strong>4, 5, 6, 7</strong> = 0 bodova<br>
+        Zadnji štih = +1 bod<br>
+        <strong>Ukupno: 11 punata po rundi</strong>
+      </div>
+    </div>
+    <div class="rule-row">
+      <div class="rule-head">Napola <span style="color:var(--red); font-size:12px;">+3 boda</span></div>
+      <div class="rule-body">3 ase, 3 dvojke ili 3 trojke iste boje (kod parova) ili u istoj ruci (kod 2, 3 ili 4 igrača).</div>
+    </div>
+    <div class="rule-row">
+      <div class="rule-head">Tri trojke, dvojke ili asa <span style="color:var(--red); font-size:12px;">+3 boda</span></div>
+      <div class="rule-body">3 iste karte različitih boja u istoj ruci.</div>
+    </div>
+    <div class="rule-row">
+      <div class="rule-head">Četiri trojke, dvojke ili asa <span style="color:var(--red); font-size:12px;">+4 boda</span></div>
+      <div class="rule-body">Sve 4 karte istog ranga (As, 2 ili 3) u istoj ruci.</div>
+    </div>
+    <div class="rule-row">
+      <div class="rule-head">Kraj partije</div>
+      <div class="rule-body">Pobjeđuje ekipa koja prva dostigne <strong>41 bod</strong>. Ako prijeđu obje u istoj rundi, pobjeđuje ona s više bodova.</div>
+    </div>
+    <div class="modal-btns single" style="margin-top:12px;">
+      <button class="m-btn m-btn-ghost" id="rulesClose">Zatvori</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== GAME WINNER (partija unutar meča) MODAL ====== -->
+<div class="modal-overlay" id="gameWinnerModal">
+  <div class="modal" style="text-align:center;">
+    <div style="font-size:36px; margin-bottom:8px;">🎉</div>
+    <div class="winner-block">
+      <div class="winner-label">Pobjeđuje partiju</div>
+      <div class="winner-name" id="gwName">—</div>
+      <div class="winner-score" id="gwScore">0</div>
+    </div>
+    <div id="gwBoard" style="text-align:left; margin-bottom:14px;"></div>
+    <button class="m-btn m-btn-red" style="width:100%;" id="nextGameBtn">Sljedeća partija →</button>
+  </div>
+</div>
+
+<!-- ====== WINNER MODAL ====== -->
+<div class="modal-overlay" id="winnerModal">
+  <div class="modal" style="text-align:center;">
+    <div style="font-size:36px; margin-bottom:8px;">🏆</div>
+    <div class="winner-block">
+      <div class="winner-label">Pobjeđuje</div>
+      <div class="winner-name" id="winnerName">—</div>
+      <div class="winner-score" id="winnerScore">0</div>
+      <div class="winner-score-caption" id="winnerScoreCaption"></div>
+    </div>
+    <div id="winnerBoard" style="text-align:left; margin-bottom:12px;"></div>
+    <div style="font-size:13px; color:var(--green); font-weight:700; text-align:center; margin-bottom:14px;">✓ Partija spremljena</div>
+    <button class="m-btn m-btn-red" style="width:100%;" id="newAfterWin">Nova partija</button>
+  </div>
+</div>
+
+<!-- ====== AKUŽA POPUP (klik na oznaku iznad punata) ====== -->
+<div class="modal-overlay" id="akuzaModal" style="z-index:150;">
+  <div class="modal">
+    <div class="modal-title" id="akuzaModalTitle">Akuže</div>
+    <div id="akuzaModalItems"></div>
+    <div class="modal-btns single" style="margin-top:16px;">
+      <button class="m-btn m-btn-red" id="akuzaModalClose">Gotovo</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===================== CONFIG =====================
+const AKUZI = [
+  { key:'napola',   name:'Napola',                          pts:3, hint:'3 ase/dvojke/trojke iste boje' },
+  { key:'tresete',  name:'Tri trojke, dvojke ili asa',      pts:3, hint:'3 iste karte različitih boja' },
+  { key:'quattro',  name:'Četiri trojke, dvojke ili asa',   pts:4, hint:'Sve 4 karte istog ranga' },
+];
+const DEFAULT_TARGET = 41;
+const SAVE_KEY   = 'treseta_saves_v2';
+const AUTO_KEY   = 'treseta_auto_v2';
+const NAMES_KEY  = 'treseta_names_v1';
+const APP_VERSION = '1.8';
+
+// ===================== STATE =====================
+let G = null; // game state
+let draft = null;
+let akuzTeam = 0;
+
+// Target bodova za pobjedu jedne partije (koristi se svugdje umjesto starog TARGET)
+function targetScore() {
+  return (G && G.targetScore) || DEFAULT_TARGET;
+}
+function winsNeeded() {
+  return (G && G.winsNeeded) || 1;
+}
+
+function blankDraft(teamCount, playerCount) {
+  return {
+    punti: Array(teamCount).fill(''),
+    akuzi: Array(playerCount).fill(null).map(() => ({})),
+  };
+}
+
+// Jedinstveni ID koji prati JEDNU partiju/meč kroz cijeli životni vijek
+// (koristi se da pauziranje/spremanje uvijek ažurira ISTI zapis, bez dupliciranja)
+function genSaveId() {
+  return 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+// ===================== SPREMLJENA IMENA =====================
+function getSavedNames() {
+  try { return JSON.parse(localStorage.getItem(NAMES_KEY) || '[]'); } catch { return []; }
+}
+function rememberNames(names) {
+  try {
+    let list = getSavedNames();
+    names.forEach(n => {
+      n = (n||'').trim();
+      if (!n) return;
+      list = list.filter(x => x.toLowerCase() !== n.toLowerCase());
+      list.unshift(n);
+    });
+    if (list.length > 24) list.length = 24;
+    localStorage.setItem(NAMES_KEY, JSON.stringify(list));
+  } catch(e) {}
+}
+
+function newGame(mode, names, opts) {
+  opts = opts || {};
+  const teamCount = names.length;
+  G = {
+    saveId: genSaveId(),
+    mode,
+    teams: names.map((n,i) => ({ id:i, name:n, score:0 })),
+    rounds: [],
+    targetScore: opts.targetScore || DEFAULT_TARGET,
+    winsNeeded: opts.winsNeeded || 1,
+    matchWins: Array(teamCount).fill(0),
+    matchHistory: [], // niz odigranih partija unutar meča: {teams:[{name,score}], winnerIdx}
+  };
+  draft = blankDraft(tc(), pc());
+  akuzTeam = 0;
+  render();
+  autoSave();
+}
+
+// Popuni nedostajuća polja za starije spremljene partije (prije uvođenja meč-moda)
+function normalizeGame(g) {
+  if (!g) return g;
+  if (!g.saveId) g.saveId = genSaveId();
+  if (!g.targetScore) g.targetScore = DEFAULT_TARGET;
+  if (!g.winsNeeded) g.winsNeeded = 1;
+  if (!Array.isArray(g.matchWins)) g.matchWins = g.teams.map(()=>0);
+  if (!Array.isArray(g.matchHistory)) g.matchHistory = [];
+  return g;
+}
+
+// Priprema sljedeće partije unutar istog meča (isti igrači, resetiraju se bodovi runde)
+function nextGameInMatch() {
+  G.teams.forEach(t => t.score = 0);
+  G.rounds = [];
+  draft = blankDraft(tc(), pc());
+  akuzTeam = 0;
+  render();
+  autoSave();
+}
+
+// Number of teams (= scoreboard cards and punti inputs)
+function tc() {
+  // If we have actual teams array, use its length (most reliable, handles legacy saves)
+  if (G && G.teams && G.teams.length) return G.teams.length;
+  // Fallback to mode interpretation
+  if (G.mode === 'pairs') return 2;
+  if (G.mode === '4') return 4;
+  if (G.mode === 4) return 2; // legacy: numeric 4 meant pairs (2 teams)
+  if (G.mode === '3' || G.mode === 3) return 3;
+  return 2;
+}
+
+// Number of akuzi entries (= akuzi tabs)
+// Always equal to team count — even in pairs, akuze are tracked per team.
+function pc() {
+  return tc();
+}
+
+// Returns true if pairs mode (4 players, 2 teams)
+function isPairs() {
+  return G && (G.mode === 'pairs' || G.mode === 4);
+}
+
+// Map akuzi-entry index → team index (1:1 in current model)
+function playerToTeam(playerIdx) {
+  return playerIdx;
+}
+
+// Get display name for akuzi tab — just the team/player name
+function playerName(playerIdx) {
+  return G.teams[playerIdx].name;
+}
+
+// ===================== AKUŽI LIMIT LOGIKA =====================
+// Fizički limit: postoje 3 ranga (As, 2, 3), svaki sa 4 karte u špilu.
+// Svaki rang može generirati najviše JEDNU akužu po rundi (napola ILI 3× ILI 4×).
+// Stoga je ukupan broj svih akuža (zbroj kroz sve igrače) ograničen na 3.
+// Funkcija vraća true ako je trenutno povećanje akuze dozvoljeno.
+function akuziTotalCount() {
+  let total = 0;
+  draft.akuzi.forEach(pAk => {
+    AKUZI.forEach(ak => { total += (pAk[ak.key] || 0); });
+  });
+  return total;
+}
+
+function canAddAkuza() {
+  return true;
+}
+// ===============================================================
+
+function autoSave() {
+  if (!G) return;
+  try { localStorage.setItem(AUTO_KEY, JSON.stringify(G)); } catch(e) {}
+}
+function clearAuto() { try { localStorage.removeItem(AUTO_KEY); } catch(e) {} }
+function loadAuto() { try { return JSON.parse(localStorage.getItem(AUTO_KEY)||'null'); } catch { return null; } }
+function getSaves() { try { return JSON.parse(localStorage.getItem(SAVE_KEY)||'[]'); } catch { return []; } }
+function setSaves(a) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(a)); } catch(e) {} }
+function saveAs(name) {
+  const saves = getSaves();
+  const idx = saves.findIndex(s => s.name === name);
+  const entry = { name, ts: Date.now(), state: JSON.parse(JSON.stringify(G)) };
+  if (idx >= 0) saves[idx] = entry; else saves.unshift(entry);
+  if (saves.length > 15) saves.length = 15;
+  setSaves(saves);
+  showToast('Spremljeno ✓');
+}
+
+// Automatsko spremanje završene partije (jedinstven naziv s datumom)
+function autoSaveFinished() {
+  if (!G.saveId) G.saveId = genSaveId();
+  const d = new Date();
+  const p = n => String(n).padStart(2,'0');
+  const dateStr = `${p(d.getDate())}.${p(d.getMonth()+1)}.${d.getFullYear()}`;
+  const baseName = `${G.teams.map(t=>t.name).join(' vs ')} — ${dateStr}`.slice(0, 60);
+  // Ukloni eventualni raniji (pauzirani) zapis ISTE partije/meča da se ne duplicira
+  const saves = getSaves().filter(s => !(s.state && s.state.saveId === G.saveId));
+  let name = baseName;
+  let n = 2;
+  while (saves.some(s => s.name === name)) {
+    name = `${baseName} (${n})`;
+    n++;
+  }
+  const entry = {
+    name,
+    ts: Date.now(),
+    state: JSON.parse(JSON.stringify({ ...G, finished: true })),
+  };
+  saves.unshift(entry);
+  if (saves.length > 30) saves.length = 30;
+  setSaves(saves);
+}
+
+// Pauziraj trenutnu (nedovršenu) partiju - sprema je u popis za kasniji nastavak
+// i oslobađa aktivnu partiju tako da odmah može započeti (i završiti) nova.
+// Ako je ista partija/meč (isti saveId) već ranije pauzirana, AŽURIRA taj isti zapis
+// umjesto da stvara novi (spriječava dupliciranje pri ponovnom pauziranju).
+function pauseCurrentGame() {
+  if (!G) return;
+  if (!G.saveId) G.saveId = genSaveId();
+  const saves = getSaves();
+  const existingIdx = saves.findIndex(s => s.state && s.state.saveId === G.saveId);
+  let name;
+  if (existingIdx >= 0) {
+    name = saves[existingIdx].name;
+  } else {
+    const d = new Date();
+    const p = n => String(n).padStart(2,'0');
+    const dateStr = `${p(d.getDate())}.${p(d.getMonth()+1)}.${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    const baseName = `${G.teams.map(t=>t.name).join(' vs ')} — pauzirano ${dateStr}`.slice(0, 60);
+    let candidate = baseName;
+    let n = 2;
+    while (saves.some(s => s.name === candidate)) {
+      candidate = `${baseName} (${n})`;
+      n++;
+    }
+    name = candidate;
+  }
+  const entry = {
+    name,
+    ts: Date.now(),
+    state: JSON.parse(JSON.stringify({ ...G, finished: false })),
+  };
+  if (existingIdx >= 0) saves[existingIdx] = entry; else saves.unshift(entry);
+  if (saves.length > 30) saves.length = 30;
+  setSaves(saves);
+  clearAuto();
+  G = null;
+}
+
+// ===================== RENDER =====================
+function render() {
+  renderScoreboard();
+  renderPunti();
+  renderSumHint();
+  document.getElementById('hdrRound').textContent = `R${G.rounds.length + 1}`;
+  const hb = document.getElementById('historyBtn');
+  hb.title = G.rounds.length ? `Povijest (${G.rounds.length})` : 'Povijest';
+  hb.dataset.count = G.rounds.length || '';
+}
+
+function renderScoreboard() {
+  const sb = document.getElementById('scoreboard');
+  const n = tc();
+  sb.className = 'scoreboard ' + (n === 4 ? 't4' : n === 3 ? 't3' : 't2');
+  const max = Math.max(...G.teams.map(t => t.score));
+  sb.innerHTML = '';
+  G.teams.forEach(t => {
+    const T = targetScore();
+    const isWin = t.score >= T && t.score === Math.max(...G.teams.filter(x=>x.score>=T).map(x=>x.score));
+    const isLead = !isWin && t.score === max && max > 0 && G.teams.filter(x=>x.score===max).length===1;
+    const pct = Math.min(100, t.score / T * 100);
+    const cls = isWin ? 'winning' : isLead ? 'leading' : '';
+    const card = document.createElement('div');
+    card.className = `score-card ${cls}`;
+    const mw = (G.matchWins && G.matchWins[t.id]) || 0;
+    const matchLine = winsNeeded() > 1 ? `<div class="sc-match">🏅 ${mw}/${winsNeeded()}</div>` : '';
+    card.innerHTML = `
+      <div class="sc-name">${esc(t.name)}</div>
+      <div class="sc-score">${t.score}</div>
+      <div class="sc-of">/ ${T}</div>
+      <div class="progress"><div class="progress-fill" style="width:${pct}%"></div></div>
+      ${matchLine}
+    `;
+    sb.appendChild(card);
+  });
+}
+
+function renderPunti() {
+  const row = document.getElementById('puntiRow');
+  const n = tc();
+  row.className = 'punti-row ' + (n === 4 ? 't4' : n === 3 ? 't3' : 't2');
+  row.innerHTML = '';
+  G.teams.forEach((t, i) => {
+    const total = akuzeTotalForTeam(i);
+    const f = document.createElement('div');
+    f.className = 'punti-field';
+    f.innerHTML = `
+      <div class="pf-label">${esc(t.name)}</div>
+      <button type="button" class="pf-akuza-badge${total?' has':''}" id="pf-akuza-${i}">${total ? '+'+total : '⊕ akuže'}</button>
+      <input class="pf-input" id="pi-${i}" type="number" inputmode="numeric"
+        placeholder="0" min="0" max="11" value="${draft.punti[i]}">
+    `;
+    row.appendChild(f);
+  });
+  G.teams.forEach((_, i) => {
+    document.getElementById(`pi-${i}`).addEventListener('input', e => {
+      let v = e.target.value.replace(/[^0-9]/g,'');
+      if (parseInt(v) > 11) v = '11';
+      e.target.value = v;
+      draft.punti[i] = v;
+      autoFillLast(i);
+      renderSumHint();
+    });
+    document.getElementById(`pf-akuza-${i}`).addEventListener('click', () => openAkuzaModal(i));
+  });
+}
+
+function updatePuntiAkuzaBadge(i) {
+  const badge = document.getElementById(`pf-akuza-${i}`);
+  if (!badge) return;
+  const total = akuzeTotalForTeam(i);
+  badge.textContent = total ? `+${total}` : '⊕ akuže';
+  badge.classList.toggle('has', total > 0);
+}
+
+// Automatski izračunaj ZADNJE polje kao 11 - zbroj svih ostalih (čim su svi prethodni upisani).
+// Kod 2 igrača ostaje simetrično (bilo koje polje pokreće izračun onog drugog).
+function autoFillLast(changedIdx) {
+  const n = tc();
+  if (n < 2) return;
+
+  if (n === 2) {
+    const v = parseInt(draft.punti[changedIdx]);
+    if (isNaN(v) || v < 0 || v > 11) return;
+    const other = 1 - changedIdx;
+    draft.punti[other] = String(11 - v);
+    const inp = document.getElementById(`pi-${other}`);
+    if (inp) inp.value = draft.punti[other];
+    return;
+  }
+
+  const lastIdx = n - 1;
+  if (changedIdx === lastIdx) return; // ručni unos zadnjeg polja se ne prepisuje
+  let sum = 0;
+  for (let k = 0; k < lastIdx; k++) {
+    const v = parseInt(draft.punti[k]);
+    if (isNaN(v)) return; // još nisu sva prethodna polja upisana
+    sum += v;
+  }
+  const remaining = 11 - sum;
+  if (remaining < 0 || remaining > 11) return;
+  draft.punti[lastIdx] = String(remaining);
+  const inp = document.getElementById(`pi-${lastIdx}`);
+  if (inp) inp.value = draft.punti[lastIdx];
+}
+
+function renderSumHint() {
+  const hint = document.getElementById('sumHint');
+  const sum = draft.punti.reduce((a,v)=>a+(parseInt(v)||0),0);
+  const allEmpty = draft.punti.every(v=>v===''||v==null);
+  if (allEmpty) { hint.textContent = 'UKUPNO MORA BITI 11 PUNATA'; hint.className='sum-hint'; return; }
+  if (sum===11) { hint.textContent = '✓  ZBROJ: 11'; hint.className='sum-hint ok'; }
+  else if (sum<11) { hint.textContent = `ZBROJ: ${sum}  —  FALI ${11-sum}`; hint.className='sum-hint under'; }
+  else { hint.textContent = `ZBROJ: ${sum}  —  VIŠAK ${sum-11}!`; hint.className='sum-hint over'; }
+}
+
+// ===================== AKUŽE (popup preko oznake iznad punata) =====================
+function akuzeTotalForTeam(i) {
+  const teamAk = draft.akuzi[i] || {};
+  return AKUZI.reduce((s, ak) => s + (teamAk[ak.key]||0)*ak.pts, 0);
+}
+
+function openAkuzaModal(i) {
+  akuzTeam = i;
+  document.getElementById('akuzaModalTitle').innerHTML = `AKU<span class="accent">ŽE</span> — ${esc(playerName(i))}`;
+  renderAkuzaModalItems();
+  openM('akuzaModal');
+}
+
+function renderAkuzaModalItems() {
+  const wrap = document.getElementById('akuzaModalItems');
+  wrap.innerHTML = '';
+  const teamAk = draft.akuzi[akuzTeam] || {};
+
+  AKUZI.forEach(ak => {
+    const cnt = teamAk[ak.key] || 0;
+    const div = document.createElement('div');
+    div.className = 'akuz-item';
+    div.innerHTML = `
+      <div class="ai-info">
+        <div class="ai-name">${ak.name}</div>
+        <div class="ai-hint">${ak.hint}</div>
+        <span class="ai-pts">+${ak.pts} bod${ak.pts>1?'a':''}</span>
+      </div>
+      <div class="ai-counter">
+        <button class="ai-btn" data-d="-1" ${cnt === 0 ? 'disabled' : ''}>−</button>
+        <div class="ai-num">${cnt}</div>
+        <button class="ai-btn" data-d="1">+</button>
+      </div>
+    `;
+    div.querySelectorAll('.ai-btn').forEach(btn => {
+      btn.onclick = () => {
+        if (btn.disabled) return;
+        const d = parseInt(btn.dataset.d);
+        teamAk[ak.key] = Math.max(0, (teamAk[ak.key]||0) + d);
+        if (!teamAk[ak.key]) delete teamAk[ak.key];
+        draft.akuzi[akuzTeam] = teamAk;
+        renderAkuzaModalItems();
+        updatePuntiAkuzaBadge(akuzTeam);
+      };
+    });
+    wrap.appendChild(div);
+  });
+}
+
+document.getElementById('akuzaModalClose').onclick = () => closeM('akuzaModal');
+
+// ===================== HISTORY SHEET =====================
+function openHistory() {
+  renderHistory();
+  openSheet('histSheet','histOverlay');
+}
+
+function renderHistory() {
+  const body = document.getElementById('histBody');
+  body.innerHTML = '';
+  if (!G.rounds.length) {
+    body.innerHTML = '<div class="empty-hist">Nema odigranih rundi</div>';
+    return;
+  }
+  G.rounds.forEach((r, idx) => {
+    const row = document.createElement('div');
+    row.className = 'hist-row';
+    let lines = '';
+    G.teams.forEach((t, i) => {
+      const p = r.punti[i]||0;
+      const a = r.akuzPts[i]||0;
+      const akNote = descAk(r.akuzi[i]||{});
+      lines += `<div class="hist-line">
+        <span class="hist-name">${esc(t.name)}</span>
+        <span class="hist-pts">${p+a}${a?` <small style="color:var(--gold);font-weight:600;">(${p}+${a})</small>`:''}</span>
+      </div>`;
+      if (akNote) lines += `<div class="hist-akuzi">${esc(t.name)}: ${akNote}</div>`;
+    });
+    row.innerHTML = `
+      <div class="hist-num">${idx+1}</div>
+      <div class="hist-content">${lines}</div>
+      <button class="hist-del" title="Obriši">✕</button>
+    `;
+    row.querySelector('.hist-del').onclick = () => deleteRound(idx);
+    body.appendChild(row);
+  });
+  // Total row
+  const tot = document.createElement('div');
+  tot.className = 'hist-row hist-total';
+  let tLines = '';
+  G.teams.forEach(t => {
+    tLines += `<div class="hist-line">
+      <span class="hist-name">${esc(t.name)}</span>
+      <span class="hist-pts" style="color:var(--red);">${t.score}</span>
+    </div>`;
+  });
+  tot.innerHTML = `<div class="hist-num">Σ</div><div class="hist-content">${tLines}</div><div></div>`;
+  body.appendChild(tot);
+}
+
+function descAk(obj) {
+  return AKUZI.filter(ak=>obj[ak.key]).map(ak=>`${obj[ak.key]>1?obj[ak.key]+'× ':''}${ak.name}`).join(', ');
+}
+
+function deleteRound(idx) {
+  closeSheet('histSheet','histOverlay');
+  openConfirm({
+    title:'Obriši rundu?',
+    msg:`Obrisati rundu ${idx+1}? Bodovi će se preračunati.`,
+    onOk:()=>{
+      const r = G.rounds[idx];
+      G.teams.forEach((t,i)=>{ t.score-=(r.punti[i]||0)+(r.akuzPts[i]||0); });
+      G.rounds.splice(idx,1);
+      render(); autoSave(); showToast('Runda obrisana');
+    }
+  });
+}
+
+// ===================== ADD ROUND =====================
+// Aggregate per-player akuzi → per-team akuzi (for points calculation)
+function aggregateAkuziToTeams() {
+  const teamCount = tc();
+  const result = []; // per team: { napola: n, tresete: n, quattro: n }
+  for (let t = 0; t < teamCount; t++) {
+    const agg = {};
+    AKUZI.forEach(ak => { agg[ak.key] = 0; });
+    draft.akuzi.forEach((pAk, pIdx) => {
+      if (playerToTeam(pIdx) !== t) return;
+      AKUZI.forEach(ak => { agg[ak.key] += (pAk[ak.key] || 0); });
+    });
+    result.push(agg);
+  }
+  return result;
+}
+
+function calcRoundTotals() {
+  const teamAkuzi = aggregateAkuziToTeams();
+  return G.teams.map((_,i)=>{
+    const p = parseInt(draft.punti[i])||0;
+    let a = 0;
+    AKUZI.forEach(ak=>{ a+=(teamAkuzi[i][ak.key]||0)*ak.pts; });
+    return {punti:p, akuzPts:a, total:p+a, akuziDetail: teamAkuzi[i]};
+  });
+}
+
+function addRound() {
+  const totals = calcRoundTotals();
+  const sum = totals.reduce((a,t)=>a+t.punti,0);
+  const anyVal = totals.some(t=>t.total>0);
+  if (!anyVal) { showToast('Unesi punte ili akuže'); return; }
+  if (sum > 11) { showToast(`Zbroj je ${sum} — ne može biti više od 11`); return; }
+  if (sum < 11 && sum > 0) {
+    openConfirm({
+      title:'Zbroj nije 11',
+      msg:`Ukupno je ${sum} punata — trebalo bi biti 11. Svejedno spremi?`,
+      onOk:()=>commitRound(totals)
+    });
+    return;
+  }
+  commitRound(totals);
+}
+
+function commitRound(totals) {
+  G.rounds.push({
+    punti: totals.map(t=>t.punti),
+    akuzPts: totals.map(t=>t.akuzPts),
+    akuzi: totals.map(t=>({...t.akuziDetail})), // per-team aggregated
+  });
+  G.teams.forEach((t,i)=>{ t.score+=totals[i].total; });
+  draft = blankDraft(tc(), pc());
+  akuzTeam = 0;
+  render();
+  autoSave();
+  showToast('Runda zapisana ✓');
+  const winners = G.teams.filter(t=>t.score>=targetScore());
+  if (winners.length) setTimeout(handleGameEnd, 500);
+}
+
+function resetDraft() {
+  draft = blankDraft(tc(), pc());
+  akuzTeam = 0;
+  render();
+}
+
+// ===================== KRAJ PARTIJE / MEČA =====================
+function handleGameEnd() {
+  const sorted = [...G.teams].sort((a,b)=>b.score-a.score);
+  const w = sorted[0];
+  G.matchWins[w.id] = (G.matchWins[w.id]||0) + 1;
+  G.matchHistory.push({
+    teams: G.teams.map(t=>({name:t.name, score:t.score})),
+    winnerIdx: w.id,
+  });
+  if (G.matchWins[w.id] >= winsNeeded()) {
+    showWinner();
+  } else {
+    showGameWinner(w);
+  }
+}
+
+// Prikaz pobjednika jedne partije unutar meča (nastavlja se dalje)
+function showGameWinner(w) {
+  document.getElementById('gwName').textContent = w.name;
+  document.getElementById('gwScore').textContent = w.score;
+  const board = document.getElementById('gwBoard');
+  board.innerHTML = G.teams.map(t=>`
+    <div class="saved-row">
+      <div class="saved-info"><div class="saved-name">${esc(t.name)}</div></div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold);">${G.matchWins[t.id]||0} <small style="font-size:11px;color:var(--dim);">partij${(G.matchWins[t.id]||0)===1?'a':'e'}</small></div>
+    </div>`).join('');
+  autoSave();
+  openM('gameWinnerModal');
+}
+
+// Prikaz pobjednika cijelog meča (kraj)
+function showWinner() {
+  // Pobjednik meča = ekipa s najviše osvojenih partija (NE po zadnjem rezultatu bodova!)
+  const w = G.teams.reduce((best, t) => (G.matchWins[t.id]||0) > (G.matchWins[best.id]||0) ? t : best, G.teams[0]);
+  document.getElementById('winnerName').textContent = w.name;
+  const board = document.getElementById('winnerBoard');
+  if (winsNeeded() > 1) {
+    const sorted = [...G.teams].sort((a,b)=>(G.matchWins[b.id]||0)-(G.matchWins[a.id]||0));
+    const runnerUpWins = sorted.length > 1 ? (G.matchWins[sorted[1].id]||0) : 0;
+    document.getElementById('winnerScore').textContent = `${G.matchWins[w.id]||0} : ${runnerUpWins}`;
+    document.getElementById('winnerScoreCaption').textContent = 'omjer partija u meču';
+    board.innerHTML = sorted.map((t,i)=>`
+      <div class="saved-row">
+        <div class="saved-info"><div class="saved-name">${i+1}. ${esc(t.name)}</div></div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--red);">${G.matchWins[t.id]||0} partij${(G.matchWins[t.id]||0)===1?'a':'e'}</div>
+      </div>`).join('');
+  } else {
+    document.getElementById('winnerScore').textContent = w.score;
+    document.getElementById('winnerScoreCaption').textContent = '';
+    board.innerHTML = [...G.teams].sort((a,b)=>b.score-a.score).map((t,i)=>`
+      <div class="saved-row">
+        <div class="saved-info"><div class="saved-name">${i+1}. ${esc(t.name)}</div></div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--red);">${t.score}</div>
+      </div>`).join('');
+  }
+  openM('winnerModal');
+  autoSaveFinished();
+  clearAuto();
+}
+
+// ===================== SHEET HELPERS =====================
+function openSheet(id, ovId) {
+  document.getElementById(id).classList.add('open');
+  document.getElementById(ovId).classList.add('open');
+}
+function closeSheet(id, ovId) {
+  document.getElementById(id).classList.remove('open');
+  document.getElementById(ovId).classList.remove('open');
+}
+
+// ===================== MODAL HELPERS =====================
+function openM(id) {
+  if (id === 'menuModal') updateMenuState();
+  document.getElementById(id).classList.add('open');
+}
+function closeM(id) { document.getElementById(id).classList.remove('open'); }
+
+// Prikaži/sakrij "Pauziraj partiju" ovisno o tome postoji li aktivna partija
+function updateMenuState() {
+  const pauseBtn = document.getElementById('pauseBtn');
+  if (pauseBtn) pauseBtn.style.display = G ? '' : 'none';
+}
+
+// ===================== THEME =====================
+const THEME_KEY = 'treseta_theme';
+const THEME_COLORS = { light: '#f0eee8', dark: '#1e2435' };
+
+function getTheme() {
+  try { return localStorage.getItem(THEME_KEY) || 'dark'; } catch { return 'dark'; }
+}
+
+function setTheme(theme) {
+  if (theme !== 'light' && theme !== 'dark') theme = 'dark';
+  if (theme === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+  }
+  const meta = document.getElementById('themeColorMeta');
+  if (meta) meta.setAttribute('content', THEME_COLORS[theme]);
+  try { localStorage.setItem(THEME_KEY, theme); } catch {}
+  // Update active state on toggle buttons
+  document.querySelectorAll('#themeSegs .seg-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.theme === theme);
+  });
+}
+
+function initTheme() {
+  setTheme(getTheme());
+  document.getElementById('themeSegs').addEventListener('click', e => {
+    const btn = e.target.closest('.seg-btn');
+    if (!btn) return;
+    setTheme(btn.dataset.theme);
+  });
+}
+
+let _confirmOk = null;
+let _confirmExtra = null;
+function openConfirm({title,msg,withInput,inputDef,onOk,okLabel,noLabel,extraLabel,onExtra}) {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent = msg;
+  const iw = document.getElementById('confirmInputWrap');
+  const inp = document.getElementById('confirmInput');
+  if (withInput) { iw.style.display='block'; inp.value=inputDef||''; setTimeout(()=>inp.focus(),100); }
+  else { iw.style.display='none'; }
+  document.getElementById('confirmYes').textContent = okLabel || 'Potvrdi';
+  document.getElementById('confirmNo').textContent = noLabel || 'Odustani';
+  const extraBtn = document.getElementById('confirmExtra');
+  const btnsWrap = document.getElementById('confirmBtns');
+  if (extraLabel && onExtra) {
+    extraBtn.textContent = extraLabel;
+    extraBtn.style.display = '';
+    btnsWrap.classList.add('three');
+    _confirmExtra = onExtra;
+  } else {
+    extraBtn.style.display = 'none';
+    btnsWrap.classList.remove('three');
+    _confirmExtra = null;
+  }
+  _confirmOk = () => onOk(inp.value.trim());
+  openM('confirmModal');
+}
+
+// ===================== TOAST =====================
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2000);
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function fmt(ts) {
+  const d=new Date(ts);
+  const p=n=>String(n).padStart(2,'0');
+  return `${p(d.getDate())}.${p(d.getMonth()+1)}.${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+// ===================== SETUP =====================
+let setupMode = 'pairs';
+
+// Padajući izbornik sa spremljenim imenima (bez oblačića) - input ostaje slobodan za upis
+function attachNameDropdown(inp, dropdown) {
+  function otherValues() {
+    return [...document.querySelectorAll('#setupNames input')]
+      .filter(x => x !== inp)
+      .map(x => x.value.trim().toLowerCase())
+      .filter(Boolean);
+  }
+  function renderList() {
+    const q = inp.value.trim().toLowerCase();
+    const used = otherValues();
+    const opts = getSavedNames().filter(n => {
+      const nl = n.toLowerCase();
+      if (used.includes(nl)) return false;
+      if (q && !nl.includes(q)) return false;
+      return true;
+    }).slice(0, 6);
+    if (!opts.length) { dropdown.classList.remove('open'); dropdown.innerHTML=''; return; }
+    dropdown.innerHTML = opts.map(n=>`<div class="name-opt">${esc(n)}</div>`).join('');
+    dropdown.classList.add('open');
+  }
+  inp.addEventListener('focus', renderList);
+  inp.addEventListener('input', renderList);
+  inp.addEventListener('blur', ()=> setTimeout(()=>dropdown.classList.remove('open'), 180));
+  dropdown.addEventListener('mousedown', e => {
+    const opt = e.target.closest('.name-opt');
+    if (!opt) return;
+    e.preventDefault();
+    inp.value = opt.textContent;
+    dropdown.classList.remove('open');
+  });
+}
+
+function buildNameField(placeholder) {
+  const wrap = document.createElement('div');
+  wrap.className = 'name-field';
+  const inp = document.createElement('input');
+  inp.type = 'text';
+  inp.placeholder = placeholder;
+  inp.maxLength = 20;
+  inp.autocomplete = 'off';
+  const dropdown = document.createElement('div');
+  dropdown.className = 'name-dropdown';
+  wrap.appendChild(inp);
+  wrap.appendChild(dropdown);
+  attachNameDropdown(inp, dropdown);
+  return { wrap, inp };
+}
+
+function buildSetupNames() {
+  const wrap = document.getElementById('setupNames');
+  const label = document.getElementById('namesLabel');
+  wrap.innerHTML = '';
+
+  if (setupMode === 'pairs') {
+    label.textContent = 'Igrači po ekipama';
+    for (let team = 0; team < 2; team++) {
+      const group = document.createElement('div');
+      group.className = 'pair-group';
+      const title = document.createElement('div');
+      title.className = 'pair-group-title';
+      title.textContent = team === 0 ? 'Ekipa A' : 'Ekipa B';
+      group.appendChild(title);
+      for (let slot = 0; slot < 2; slot++) {
+        const { wrap: fieldWrap, inp } = buildNameField(`Igrač ${team*2 + slot + 1}`);
+        inp.dataset.team = String(team);
+        inp.dataset.slot = String(slot);
+        group.appendChild(fieldWrap);
+      }
+      wrap.appendChild(group);
+    }
+  } else {
+    const count = parseInt(setupMode);
+    label.textContent = 'Imena igrača';
+    for (let i = 0; i < count; i++) {
+      const { wrap: fieldWrap, inp } = buildNameField(`Igrač ${i+1}`);
+      inp.dataset.slot = String(i);
+      wrap.appendChild(fieldWrap);
+    }
+  }
+}
+
+document.getElementById('modeSegs').addEventListener('click', e=>{
+  if (!e.target.classList.contains('seg-btn')) return;
+  document.querySelectorAll('#modeSegs .seg-btn').forEach(b=>b.classList.remove('active'));
+  e.target.classList.add('active');
+  setupMode = e.target.dataset.m;
+  buildSetupNames();
+});
+
+document.getElementById('startBtn').onclick = ()=>{
+  let names, toRemember;
+  if (setupMode === 'pairs') {
+    toRemember = [];
+    names = [0,1].map(team=>{
+      const inp1 = document.querySelector(`#setupNames input[data-team="${team}"][data-slot="0"]`);
+      const inp2 = document.querySelector(`#setupNames input[data-team="${team}"][data-slot="1"]`);
+      const n1 = inp1.value.trim() || `Igrač ${team*2+1}`;
+      const n2 = inp2.value.trim() || `Igrač ${team*2+2}`;
+      toRemember.push(n1, n2);
+      return `${n1} i ${n2}`;
+    });
+  } else {
+    const inputs = [...document.querySelectorAll('#setupNames input')];
+    names = inputs.map((inp,i)=> inp.value.trim() || `Igrač ${i+1}`);
+    toRemember = names.slice();
+  }
+  // Provjeri da isto ime nije upisano dvaput (npr. ručnim tipkanjem, ne samo chipom)
+  const seen = new Set();
+  for (const n of toRemember) {
+    const key = n.trim().toLowerCase();
+    if (seen.has(key)) { showToast(`Ime "${n}" je upisano više puta`); return; }
+    seen.add(key);
+  }
+  const activeWinBtn = document.getElementById('winsInput');
+  const opts = {
+    targetScore: parseInt(document.getElementById('targetInput').value) || DEFAULT_TARGET,
+    winsNeeded: Math.max(1, parseInt(activeWinBtn.value) || 1),
+  };
+  newGame(setupMode, names, opts);
+  rememberNames(toRemember);
+  closeM('setupModal');
+};
+
+// ===================== BUTTONS =====================
+document.getElementById('addBtn').onclick = addRound;
+document.getElementById('resetBtn').onclick = ()=>{
+  if (draft.punti.some(v=>v!='') || draft.akuzi.some(a=>Object.keys(a).length))
+    openConfirm({title:'Poništi unos?',msg:'Obrisati sve unesene punte i akuže za ovu rundu?',onOk:resetDraft});
+  else resetDraft();
+};
+
+document.getElementById('historyBtn').onclick = openHistory;
+document.getElementById('histClose').onclick = ()=>closeSheet('histSheet','histOverlay');
+document.getElementById('histOverlay').onclick = ()=>closeSheet('histSheet','histOverlay');
+
+let initialMenu = false;
+document.getElementById('menuBtn').onclick = ()=>{ initialMenu = false; openM('menuModal'); };
+document.getElementById('menuCloseBtn').onclick = ()=>{
+  closeM('menuModal');
+  initialMenu = false;
+
+  // Je li app pokrenut kao PWA (dodan na početni zaslon / standalone)?
+  const isPWA = window.matchMedia('(display-mode: standalone)').matches
+             || window.matchMedia('(display-mode: fullscreen)').matches
+             || window.navigator.standalone === true;
+
+  if (isPWA) {
+    // U PWA načinu window.close() obično uspije i zatvori aplikaciju.
+    try { window.close(); } catch(e) {}
+    // Fallback ako preglednik ipak ne zatvori: vrati na naslovnicu.
+    setTimeout(()=>{
+      const splash = document.getElementById('splash');
+      if (splash) { splash.style.display = 'flex'; splash.classList.remove('hide'); }
+    }, 300);
+  } else {
+    // Obična kartica u pregledniku -> preusmjeri na Google.
+    window.location.href = 'https://www.google.com';
+  }
+};
+
+document.getElementById('newGameBtn').onclick = ()=>{
+  closeM('menuModal');
+  if (G && G.rounds.length>0) {
+    openConfirm({
+      title:'Nova partija?',
+      msg:'Trenutna partija još nije gotova. Možeš je pauzirati i nastaviti kasnije, ili je trajno odbaciti.',
+      okLabel:'Odbaci', extraLabel:'⏸ Pauziraj',
+      onExtra:()=>{ pauseCurrentGame(); showToast('Partija pauzirana ✓'); openM('setupModal'); },
+      onOk:()=>{ clearAuto(); G=null; openM('setupModal'); }
+    });
+  } else openM('setupModal');
+};
+
+document.getElementById('pauseBtn').onclick = ()=>{
+  if (!G) { showToast('Nema aktivne partije'); return; }
+  pauseCurrentGame();
+  updateMenuState();
+  initialMenu = true;
+  showToast('Partija pauzirana — nastavi je kasnije preko "Nastavi pauziranu partiju"');
+};
+
+document.getElementById('setupCancelBtn').onclick = ()=>{ closeM('setupModal'); openM('menuModal'); };
+
+document.getElementById('saveBtn').onclick = ()=>{
+  if (!G) { showToast('Nema aktivne partije'); return; }
+  closeM('menuModal');
+  const def = G.teams.map(t=>t.name).join(' vs ').slice(0,28);
+  const origNo = document.getElementById('confirmNo').onclick;
+  openConfirm({title:'Spremi partiju',msg:'Unesi naziv:',withInput:true,inputDef:def,
+    onOk:name=>{
+      document.getElementById('confirmNo').onclick = origNo;
+      if(!name){ showToast('Naziv ne može biti prazan'); openM('menuModal'); return; }
+      saveAs(name);
+      openM('menuModal');
+    }});
+  document.getElementById('confirmNo').onclick = ()=>{
+    closeM('confirmModal'); _confirmOk=null;
+    document.getElementById('confirmNo').onclick = origNo;
+    openM('menuModal');
+  };
+};
+
+document.getElementById('loadBtn').onclick = ()=>{
+  if (!getSaves().filter(s=>!s.state.finished).length) { showToast('Nema pauziranih partija'); return; }
+  closeM('menuModal'); renderSavedList(); openM('loadModal');
+};
+document.getElementById('loadClose').onclick = ()=>{ closeM('loadModal'); openM('menuModal'); };
+
+document.getElementById('matchHistBtn').onclick = ()=>{
+  const saves = getSaves().filter(s=>s.state.finished);
+  if (!saves.length) { showToast('Nema odigranih partija'); return; }
+  closeM('menuModal'); renderMatchHistoryList(); openM('matchHistModal');
+};
+document.getElementById('matchHistClose').onclick = ()=>{ closeM('matchHistModal'); openM('menuModal'); };
+
+document.getElementById('rulesBtn').onclick = ()=>{ closeM('menuModal'); openM('rulesModal'); };
+document.getElementById('rulesClose').onclick = ()=>{ closeM('rulesModal'); openM('menuModal'); };
+
+document.getElementById('newAfterWin').onclick = ()=>{ closeM('winnerModal'); openM('setupModal'); };
+document.getElementById('nextGameBtn').onclick = ()=>{ closeM('gameWinnerModal'); nextGameInMatch(); };
+
+document.getElementById('confirmYes').onclick = ()=>{ closeM('confirmModal'); if(_confirmOk){_confirmOk(); _confirmOk=null;} };
+document.getElementById('confirmNo').onclick  = ()=>{ closeM('confirmModal'); _confirmOk=null; _confirmExtra=null; };
+document.getElementById('confirmExtra').onclick = ()=>{ closeM('confirmModal'); if(_confirmExtra){_confirmExtra(); _confirmExtra=null;} _confirmOk=null; };
+
+// ===================== SAVED LIST =====================
+function renderSavedList() {
+  const wrap = document.getElementById('savedList');
+  const saves = getSaves().filter(s=>!s.state.finished);
+  if (!saves.length) {
+    wrap.innerHTML = '<div class="empty-hist">Nema pauziranih partija</div>';
+    return;
+  }
+  wrap.innerHTML = '';
+  saves.forEach(s=>{
+    const row = document.createElement('div');
+    row.className = 'saved-row';
+    const wn = s.state.winsNeeded || 1;
+    const scoreLine = s.state.teams.map(t=>`${t.name}: ${t.score}`).join(' · ');
+    const matchLine = wn > 1 ? ` · partije ${s.state.teams.map(t=>(s.state.matchWins && s.state.matchWins[t.id])||0).join(':')}` : '';
+    const metaInfo = `${scoreLine} · ${s.state.rounds.length} rundi${matchLine}`;
+    row.innerHTML = `
+      <div class="saved-info">
+        <div class="saved-name">${esc(s.name)}</div>
+        <div class="saved-meta">${metaInfo} · ${fmt(s.ts)}</div>
+      </div>
+    `;
+    const lb = document.createElement('button');
+    lb.className='sl-btn r'; lb.textContent='▶'; lb.title='Nastavi';
+    lb.onclick=()=>{ G=normalizeGame(JSON.parse(JSON.stringify(s.state))); draft=blankDraft(tc(), pc()); akuzTeam=0; closeM('loadModal'); render(); showToast(`Nastavljeno: ${s.name}`); };
+    const db = document.createElement('button');
+    db.className='sl-btn d'; db.textContent='✕'; db.title='Obriši';
+    db.onclick=()=>openConfirm({title:'Obrisati?',msg:`Obrisati "${s.name}"?`,
+      onOk:()=>{ setSaves(getSaves().filter(x=>x.name!==s.name)); renderSavedList(); }});
+    row.appendChild(lb); row.appendChild(db);
+    wrap.appendChild(row);
+  });
+}
+
+// Povijest odigranih (završenih) partija - samo pregled/brisanje, bez učitavanja u tijeku igre
+function renderMatchHistoryList() {
+  const wrap = document.getElementById('matchHistList');
+  const saves = getSaves().filter(s=>s.state.finished);
+  if (!saves.length) {
+    wrap.innerHTML = '<div class="empty-hist">Nema odigranih partija</div>';
+    return;
+  }
+  wrap.innerHTML = '';
+  saves.forEach(s=>{
+    const row = document.createElement('div');
+    row.className = 'saved-row';
+    const wn = s.state.winsNeeded || 1;
+    let metaInfo, name;
+    if (wn > 1 && s.state.matchWins) {
+      const sorted = [...s.state.teams].sort((a,b)=>(s.state.matchWins[b.id]||0)-(s.state.matchWins[a.id]||0));
+      const winner = sorted[0];
+      const scores = sorted.map(t=>`${s.state.matchWins[t.id]||0}`).join(':');
+      name = `🏆 ${esc(winner.name)}`;
+      metaInfo = `${scores} partija · ${(s.state.matchHistory||[]).length} partij${(s.state.matchHistory||[]).length===1?'a':'e'}`;
+    } else {
+      const sorted = [...s.state.teams].sort((a,b)=>b.score-a.score);
+      const winner = sorted[0];
+      const scores = sorted.map(t=>`${t.score}`).join(':');
+      name = `🏆 ${esc(winner.name)}`;
+      metaInfo = `${scores} · ${s.state.rounds.length} rundi`;
+    }
+    row.innerHTML = `
+      <div class="saved-info">
+        <div class="saved-name">${name}</div>
+        <div class="saved-meta">${metaInfo} · ${fmt(s.ts)}</div>
+      </div>
+    `;
+    const db = document.createElement('button');
+    db.className='sl-btn d'; db.textContent='✕'; db.title='Obriši';
+    db.onclick=()=>openConfirm({title:'Obrisati?',msg:`Obrisati povijest "${s.name}"?`,
+      onOk:()=>{ setSaves(getSaves().filter(x=>x.name!==s.name)); renderMatchHistoryList(); }});
+    row.appendChild(db);
+    wrap.appendChild(row);
+  });
+}
+
+// ===================== INIT =====================
+initTheme();
+buildSetupNames();
+const vLbl = document.getElementById('appVersionLabel');
+if (vLbl) vLbl.textContent = APP_VERSION;
+
+function bootApp() {
+  const auto = loadAuto();
+  const hasUnfinished = auto && auto.teams && auto.teams.length && !auto.teams.find(t=>t.score>=((auto.targetScore)||DEFAULT_TARGET));
+  if (hasUnfinished) {
+    closeM('setupModal');
+    openConfirm({
+      title:'Nastaviti?',
+      msg:`Pronađena prekinuta partija (${auto.teams.map(t=>t.name).join(', ')}, ${auto.rounds.length} rundi). Nastaviti?`,
+      onOk:()=>{ G=normalizeGame(auto); draft=blankDraft(tc(), pc()); akuzTeam=0; render(); }
+    });
+    const origNo = document.getElementById('confirmNo').onclick;
+    document.getElementById('confirmNo').onclick = ()=>{
+      closeM('confirmModal'); _confirmOk=null;
+      clearAuto(); initialMenu = true; openM('menuModal');
+      document.getElementById('confirmNo').onclick = origNo;
+    };
+  } else {
+    initialMenu = true;
+    openM('menuModal');
+  }
+}
+
+// Naslovnica: dodir pokreće aplikaciju
+(function(){
+  const splash = document.getElementById('splash');
+  let booted = false;
+  function go() {
+    if (booted) return;
+    booted = true;
+    splash.classList.add('hide');
+    bootApp();
+    setTimeout(()=>{ splash.style.display = 'none'; }, 550);
+  }
+  splash.addEventListener('click', go);
+  splash.addEventListener('touchstart', go, {passive:true});
+})();
+
+// ===================== PWA / SERVICE WORKER =====================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      // Odmah provjeri ima li novija verzija
+      reg.update();
+      // I dalje provjeravaj svakih 30 min dok je tab otvoren
+      setInterval(() => reg.update(), 30 * 60 * 1000);
+
+      // Kad se pronađe nova verzija, pusti je da preuzme kontrolu odmah
+      reg.addEventListener('updatefound', () => {
+        const newSW = reg.installing;
+        if (!newSW) return;
+        newSW.addEventListener('statechange', () => {
+          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+            // Nova verzija je spremna -> reci joj da preuzme kontrolu
+            newSW.postMessage('SKIP_WAITING');
+          }
+        });
+      });
+    }).catch(() => {});
+
+    // Kad novi SW preuzme kontrolu, osvježi stranicu jednom
+    // (osim ako je partija u tijeku — tad čekamo sljedeći otvor)
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (reloaded) return;
+      const partijaUTijeku = (typeof G !== 'undefined') && G && G.rounds && G.rounds.length > 0 && !G.finished;
+      if (partijaUTijeku) {
+        showToast && showToast('Nova verzija spremna — učitat će se kod sljedećeg otvaranja');
+        return;
+      }
+      reloaded = true;
+      location.reload();
+    });
+  });
+}
+</script>
+</body>
+</html>
