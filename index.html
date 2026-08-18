@@ -933,6 +933,16 @@ body {
   box-shadow: 0 0 0 1px var(--red);
 }
 
+.player-add-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.player-add-row input {
+  flex: 1;
+  margin-bottom: 0 !important;
+}
+
 .setup-num-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -975,7 +985,19 @@ body {
   margin-bottom: 8px;
 }
 .name-field { position: relative; margin-bottom: 8px; }
-.name-field input { margin-bottom: 0 !important; }
+.name-field input {
+  margin-bottom: 0 !important;
+  cursor: pointer;
+  padding-right: 30px !important;
+}
+.name-caret {
+  position: absolute;
+  right: 14px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--faint);
+  font-size: 13px;
+  pointer-events: none;
+}
 .name-dropdown {
   display: none;
   position: absolute;
@@ -1001,6 +1023,15 @@ body {
 }
 .name-opt:last-child { border-bottom: none; }
 .name-opt:active { background: var(--bg-soft); }
+.name-opt.sel { color: var(--red); background: color-mix(in srgb, var(--red) 8%, transparent); }
+.name-opt-empty {
+  color: var(--faint);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: default;
+  line-height: 1.4;
+}
+.name-opt-empty:active { background: transparent; }
 
 .seg {
   display: flex;
@@ -1277,6 +1308,7 @@ body {
       <button class="seg-btn active" data-m="pairs">2 Para</button>
     </div>
     <div class="modal-label" id="namesLabel">Imena ekipa</div>
+    <div id="setupNamesWarning" style="display:none; font-size:12px; color:var(--red); background:color-mix(in srgb, var(--red) 12%, transparent); border:1px solid color-mix(in srgb, var(--red) 30%, transparent); border-radius:10px; padding:8px 10px; margin-bottom:10px; line-height:1.4;"></div>
     <div id="setupNames"></div>
     <div class="modal-label">Cilj bodova i broj partija</div>
     <div class="setup-num-row">
@@ -1308,6 +1340,7 @@ body {
     <div class="modal-title">ME<span class="accent">NI</span></div>
     <div class="modal-btns single">
       <button class="m-btn m-btn-red" id="newGameBtn" style="margin-bottom:8px;">Nova partija</button>
+      <button class="m-btn m-btn-ghost" id="playersBtn" style="margin-bottom:8px;">👤 Igrači (unos/izmjena)</button>
       <button class="m-btn m-btn-ghost" id="pauseBtn" style="margin-bottom:8px;">⏸ Pauziraj partiju</button>
       <button class="m-btn m-btn-ghost" id="loadBtn" style="margin-bottom:8px;">▶ Nastavi pauziranu partiju</button>
       <button class="m-btn m-btn-ghost" id="saveBtn" style="margin-bottom:8px;">Spremi partiju (naziv)</button>
@@ -1357,6 +1390,19 @@ body {
     <div class="modal-title">POVIJ<span class="accent">EST</span></div>
     <div id="matchHistList" style="margin-bottom:12px;"></div>
     <button class="m-btn m-btn-ghost" style="width:100%;" id="matchHistClose">Zatvori</button>
+  </div>
+</div>
+
+<!-- ====== IGRAČI MODAL (unos/izmjena/brisanje) ====== -->
+<div class="modal-overlay" id="playersModal">
+  <div class="modal">
+    <div class="modal-title">IGRA<span class="accent">ČI</span></div>
+    <div class="player-add-row">
+      <input type="text" id="playerAddInput" placeholder="Novi igrač…" maxlength="20">
+      <button class="m-btn m-btn-red" id="playerAddBtn" style="width:auto; padding:0 18px;">+ Dodaj</button>
+    </div>
+    <div id="playersList" style="margin:14px 0 12px;"></div>
+    <button class="m-btn m-btn-ghost" style="width:100%;" id="playersClose">Zatvori</button>
   </div>
 </div>
 
@@ -1450,7 +1496,7 @@ const DEFAULT_TARGET = 41;
 const SAVE_KEY   = 'treseta_saves_v2';
 const AUTO_KEY   = 'treseta_auto_v2';
 const NAMES_KEY  = 'treseta_names_v1';
-const APP_VERSION = '1.10';
+const APP_VERSION = '1.11';
 
 // ===================== STATE =====================
 let G = null; // game state
@@ -1494,6 +1540,40 @@ function rememberNames(names) {
     if (list.length > 24) list.length = 24;
     localStorage.setItem(NAMES_KEY, JSON.stringify(list));
   } catch(e) {}
+}
+
+function setSavedNamesList(list) {
+  try { localStorage.setItem(NAMES_KEY, JSON.stringify(list)); } catch(e) {}
+}
+
+// ---- CRUD popisa igrača (meni "Igrači") ----
+function addPlayerToRoster(name) {
+  name = (name||'').trim();
+  if (!name) { showToast('Upiši ime igrača'); return false; }
+  const list = getSavedNames();
+  if (list.some(n => n.toLowerCase() === name.toLowerCase())) {
+    showToast('Igrač s tim imenom već postoji');
+    return false;
+  }
+  list.unshift(name);
+  setSavedNamesList(list);
+  return true;
+}
+
+function renamePlayerInRoster(oldName, newName) {
+  newName = (newName||'').trim();
+  if (!newName) { showToast('Ime ne može biti prazno'); return false; }
+  const list = getSavedNames();
+  if (list.some(n => n.toLowerCase() === newName.toLowerCase() && n.toLowerCase() !== oldName.toLowerCase())) {
+    showToast('Igrač s tim imenom već postoji');
+    return false;
+  }
+  setSavedNamesList(list.map(n => n === oldName ? newName : n));
+  return true;
+}
+
+function deletePlayerFromRoster(name) {
+  setSavedNamesList(getSavedNames().filter(n => n !== name));
 }
 
 function newGame(mode, names, opts) {
@@ -2079,6 +2159,7 @@ function closeSheet(id, ovId) {
 // ===================== MODAL HELPERS =====================
 function openM(id) {
   if (id === 'menuModal') updateMenuState();
+  if (id === 'setupModal') buildSetupNames();
   document.getElementById(id).classList.add('open');
 }
 function closeM(id) { document.getElementById(id).classList.remove('open'); }
@@ -2171,6 +2252,7 @@ function fmt(ts) {
 let setupMode = 'pairs';
 
 // Padajući izbornik sa spremljenim imenima (bez oblačića) - input ostaje slobodan za upis
+// Padajući izbornik ISKLJUČIVO sa spremljenim igračima (bez slobodnog upisa) - sprječava duple igrače
 function attachNameDropdown(inp, dropdown) {
   function otherValues() {
     return [...document.querySelectorAll('#setupNames input')]
@@ -2179,24 +2261,28 @@ function attachNameDropdown(inp, dropdown) {
       .filter(Boolean);
   }
   function renderList() {
-    const q = inp.value.trim().toLowerCase();
     const used = otherValues();
-    const opts = getSavedNames().filter(n => {
-      const nl = n.toLowerCase();
-      if (used.includes(nl)) return false;
-      if (q && !nl.includes(q)) return false;
-      return true;
-    }).slice(0, 6);
-    if (!opts.length) { dropdown.classList.remove('open'); dropdown.innerHTML=''; return; }
-    dropdown.innerHTML = opts.map(n=>`<div class="name-opt">${esc(n)}</div>`).join('');
+    const roster = getSavedNames();
+    if (!roster.length) {
+      dropdown.innerHTML = '<div class="name-opt name-opt-empty">Nema spremljenih igrača — dodaj ih preko "👤 Igrači" u meniju</div>';
+      dropdown.classList.add('open');
+      return;
+    }
+    const opts = roster.filter(n => !used.includes(n.toLowerCase()));
+    if (!opts.length) {
+      dropdown.innerHTML = '<div class="name-opt name-opt-empty">Svi spremljeni igrači su već odabrani</div>';
+      dropdown.classList.add('open');
+      return;
+    }
+    dropdown.innerHTML = opts.map(n=>`<div class="name-opt${n===inp.value?' sel':''}">${esc(n)}</div>`).join('');
     dropdown.classList.add('open');
   }
   inp.addEventListener('focus', renderList);
-  inp.addEventListener('input', renderList);
+  inp.addEventListener('click', renderList);
   inp.addEventListener('blur', ()=> setTimeout(()=>dropdown.classList.remove('open'), 180));
   dropdown.addEventListener('mousedown', e => {
     const opt = e.target.closest('.name-opt');
-    if (!opt) return;
+    if (!opt || opt.classList.contains('name-opt-empty')) return;
     e.preventDefault();
     inp.value = opt.textContent;
     dropdown.classList.remove('open');
@@ -2208,12 +2294,16 @@ function buildNameField(placeholder) {
   wrap.className = 'name-field';
   const inp = document.createElement('input');
   inp.type = 'text';
-  inp.placeholder = placeholder;
-  inp.maxLength = 20;
+  inp.placeholder = placeholder + ' — dodirni za odabir';
+  inp.readOnly = true;
   inp.autocomplete = 'off';
+  const caret = document.createElement('span');
+  caret.className = 'name-caret';
+  caret.textContent = '▾';
   const dropdown = document.createElement('div');
   dropdown.className = 'name-dropdown';
   wrap.appendChild(inp);
+  wrap.appendChild(caret);
   wrap.appendChild(dropdown);
   attachNameDropdown(inp, dropdown);
   return { wrap, inp };
@@ -2222,7 +2312,17 @@ function buildNameField(placeholder) {
 function buildSetupNames() {
   const wrap = document.getElementById('setupNames');
   const label = document.getElementById('namesLabel');
+  const warn = document.getElementById('setupNamesWarning');
   wrap.innerHTML = '';
+
+  const roster = getSavedNames();
+  const required = setupMode === 'pairs' ? 4 : parseInt(setupMode);
+  if (roster.length < required) {
+    warn.style.display = '';
+    warn.textContent = `Treba ${required} spremljena igrača, a u popisu ih je ${roster.length}. Dodaj ih preko "👤 Igrači" u glavnom meniju.`;
+  } else {
+    warn.style.display = 'none';
+  }
 
   if (setupMode === 'pairs') {
     label.textContent = 'Igrači po ekipama';
@@ -2243,7 +2343,7 @@ function buildSetupNames() {
     }
   } else {
     const count = parseInt(setupMode);
-    label.textContent = 'Imena igrača';
+    label.textContent = 'Igrači';
     for (let i = 0; i < count; i++) {
       const { wrap: fieldWrap, inp } = buildNameField(`Igrač ${i+1}`);
       inp.dataset.slot = String(i);
@@ -2268,27 +2368,31 @@ document.getElementById('lowWinsSeg').addEventListener('click', e=>{
 });
 
 document.getElementById('startBtn').onclick = ()=>{
+  const allInputs = [...document.querySelectorAll('#setupNames input')];
+  if (allInputs.some(inp => !inp.value.trim())) {
+    showToast('Odaberi sve igrače prije početka');
+    return;
+  }
   let names, toRemember;
   if (setupMode === 'pairs') {
     toRemember = [];
     names = [0,1].map(team=>{
       const inp1 = document.querySelector(`#setupNames input[data-team="${team}"][data-slot="0"]`);
       const inp2 = document.querySelector(`#setupNames input[data-team="${team}"][data-slot="1"]`);
-      const n1 = inp1.value.trim() || `Igrač ${team*2+1}`;
-      const n2 = inp2.value.trim() || `Igrač ${team*2+2}`;
+      const n1 = inp1.value.trim();
+      const n2 = inp2.value.trim();
       toRemember.push(n1, n2);
       return `${n1} i ${n2}`;
     });
   } else {
-    const inputs = [...document.querySelectorAll('#setupNames input')];
-    names = inputs.map((inp,i)=> inp.value.trim() || `Igrač ${i+1}`);
+    names = allInputs.map(inp=> inp.value.trim());
     toRemember = names.slice();
   }
-  // Provjeri da isto ime nije upisano dvaput (npr. ručnim tipkanjem, ne samo chipom)
+  // Sigurnosna provjera duplikata (dropdown ih inače već sprječava)
   const seen = new Set();
   for (const n of toRemember) {
-    const key = n.trim().toLowerCase();
-    if (seen.has(key)) { showToast(`Ime "${n}" je upisano više puta`); return; }
+    const key = n.toLowerCase();
+    if (seen.has(key)) { showToast(`"${n}" je odabran više puta`); return; }
     seen.add(key);
   }
   const activeWinBtn = document.getElementById('winsInput');
@@ -2394,6 +2498,55 @@ document.getElementById('matchHistBtn').onclick = ()=>{
   closeM('menuModal'); renderMatchHistoryList(); openM('matchHistModal');
 };
 document.getElementById('matchHistClose').onclick = ()=>{ closeM('matchHistModal'); openM('menuModal'); };
+
+document.getElementById('playersBtn').onclick = ()=>{
+  closeM('menuModal'); renderPlayersList(); openM('playersModal');
+};
+document.getElementById('playersClose').onclick = ()=>{ closeM('playersModal'); openM('menuModal'); };
+document.getElementById('playerAddBtn').onclick = ()=>{
+  const inp = document.getElementById('playerAddInput');
+  if (addPlayerToRoster(inp.value)) {
+    inp.value = '';
+    renderPlayersList();
+    showToast('Igrač dodan ✓');
+  }
+};
+document.getElementById('playerAddInput').addEventListener('keydown', e=>{
+  if (e.key === 'Enter') document.getElementById('playerAddBtn').click();
+});
+
+function renderPlayersList() {
+  const wrap = document.getElementById('playersList');
+  const roster = getSavedNames();
+  if (!roster.length) {
+    wrap.innerHTML = '<div class="empty-hist">Nema spremljenih igrača — dodaj prvog iznad</div>';
+    return;
+  }
+  wrap.innerHTML = '';
+  roster.forEach(name => {
+    const row = document.createElement('div');
+    row.className = 'saved-row';
+    row.innerHTML = `<div class="saved-info"><div class="saved-name">${esc(name)}</div></div>`;
+    const eb = document.createElement('button');
+    eb.className = 'sl-btn r'; eb.textContent = '✏️'; eb.title = 'Izmijeni ime';
+    eb.onclick = () => openConfirm({
+      title: 'Izmijeni igrača',
+      msg: 'Novo ime:',
+      withInput: true,
+      inputDef: name,
+      onOk: (val) => { if (renamePlayerInRoster(name, val)) { renderPlayersList(); showToast('Ime ažurirano ✓'); } },
+    });
+    const db = document.createElement('button');
+    db.className = 'sl-btn d'; db.textContent = '✕'; db.title = 'Obriši igrača';
+    db.onclick = () => openConfirm({
+      title: 'Obrisati igrača?',
+      msg: `Obrisati "${name}" iz popisa? Ovo ne utječe na već odigrane/pauzirane partije.`,
+      onOk: () => { deletePlayerFromRoster(name); renderPlayersList(); },
+    });
+    row.appendChild(eb); row.appendChild(db);
+    wrap.appendChild(row);
+  });
+}
 
 document.getElementById('rulesBtn').onclick = ()=>{ closeM('menuModal'); openM('rulesModal'); };
 document.getElementById('rulesClose').onclick = ()=>{ closeM('rulesModal'); openM('menuModal'); };
