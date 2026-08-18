@@ -153,6 +153,19 @@ body {
   border-radius: 8px;
   line-height: 1;
 }
+.hdr-lowwins {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--red);
+  letter-spacing: 0.3px;
+  padding: 6px 9px;
+  background: color-mix(in srgb, var(--red) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--red) 30%, transparent);
+  border-radius: 8px;
+  line-height: 1;
+  white-space: nowrap;
+}
 
 .icon-btn {
   width: 44px; height: 44px;
@@ -217,6 +230,10 @@ body {
   border-color: var(--gold);
   box-shadow: 0 0 0 2px var(--gold), 0 6px 22px color-mix(in srgb, var(--gold) 40%, transparent);
 }
+.score-card.danger {
+  border-color: var(--red);
+  box-shadow: 0 0 0 2px var(--red), 0 6px 22px color-mix(in srgb, var(--red) 40%, transparent);
+}
 .score-card::before {
   content: '';
   position: absolute;
@@ -227,6 +244,7 @@ body {
 }
 .score-card.leading::before { background: var(--red); }
 .score-card.winning::before { background: linear-gradient(90deg, var(--gold), var(--red)); }
+.score-card.danger::before { background: var(--red); }
 
 .sc-name {
   font-size: 12px;
@@ -248,6 +266,7 @@ body {
 }
 .score-card.leading .sc-score { color: var(--red); }
 .score-card.winning .sc-score { color: var(--gold); }
+.score-card.danger .sc-score { color: var(--red); }
 .scoreboard.t3 .sc-score { font-size: 48px; }
 .scoreboard.t4 .sc-score { font-size: 52px; }
 .sc-of {
@@ -283,6 +302,7 @@ body {
 }
 .score-card.leading .progress-fill { background: linear-gradient(90deg, var(--red) 0%, var(--gold) 100%); }
 .score-card.winning .progress-fill { background: var(--gold); }
+.score-card.danger .progress-fill { background: var(--red); }
 
 /* ======================== ROUND INPUT ======================== */
 .round-panel {
@@ -319,7 +339,7 @@ body {
   background: linear-gradient(180deg, color-mix(in srgb, var(--card) 85%, white 8%) 0%, var(--card) 100%);
   border: 1.5px solid var(--border);
   border-radius: var(--radius);
-  padding: 12px 14px 10px;
+  padding: 12px 14px 38px;
   cursor: text;
   box-shadow: var(--sh);
   transition: border-color 0.15s, box-shadow 0.2s;
@@ -331,16 +351,16 @@ body {
 
 .pf-akuza-badge {
   position: absolute;
-  top: 8px; right: 8px;
+  bottom: 8px; right: 8px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 700;
   letter-spacing: 0.3px;
   color: var(--faint);
   background: var(--bg-soft);
   border: 1px solid var(--border-soft);
   border-radius: 20px;
-  padding: 3px 9px;
+  padding: 4px 11px;
   cursor: pointer;
   line-height: 1.3;
   transition: transform 0.15s, background 0.15s, color 0.15s, border-color 0.15s;
@@ -1209,6 +1229,7 @@ body {
       <div class="hdr-title">TREŠE<span class="accent">TA</span></div>
     </div>
     <div class="hdr-right">
+      <span class="hdr-lowwins" id="hdrLowWins" style="display:none;">🔻 Tko manje</span>
       <span class="hdr-round" id="hdrRound">R1</span>
       <button class="icon-btn" id="historyBtn" title="Povijest">📋</button>
       <button class="icon-btn" id="menuBtn" title="Meni">☰</button>
@@ -1257,17 +1278,23 @@ body {
     </div>
     <div class="modal-label" id="namesLabel">Imena ekipa</div>
     <div id="setupNames"></div>
-    <div class="modal-label">Cilj i broj partija</div>
+    <div class="modal-label">Cilj bodova i broj partija</div>
     <div class="setup-num-row">
       <div class="setup-num-field">
-        <div class="pf-label">Cilj (bodova)</div>
+        <div class="pf-label">Bodova</div>
         <input type="number" id="targetInput" value="41" min="11" max="99" inputmode="numeric">
       </div>
       <div class="setup-num-field">
-        <div class="pf-label">Broj partija</div>
+        <div class="pf-label">Partija</div>
         <input type="number" id="winsInput" value="1" min="1" max="21" inputmode="numeric">
       </div>
     </div>
+    <div class="modal-label">Način bodovanja</div>
+    <div class="seg" id="lowWinsSeg">
+      <button class="seg-btn active" data-v="0">Tko više</button>
+      <button class="seg-btn" data-v="1">🔻 Tko manje</button>
+    </div>
+    <div style="font-size:11px; color:var(--faint); margin:-8px 2px 4px; line-height:1.4;">"Tko manje": tko prvi dosegne cilj bodova gubi partiju — pobjeđuje ekipa s manje bodova.</div>
     <div class="modal-btns" style="margin-top:20px;">
       <button class="m-btn m-btn-ghost" id="setupCancelBtn">Odustani</button>
       <button class="m-btn m-btn-red" id="startBtn">Započni partiju</button>
@@ -1423,7 +1450,7 @@ const DEFAULT_TARGET = 41;
 const SAVE_KEY   = 'treseta_saves_v2';
 const AUTO_KEY   = 'treseta_auto_v2';
 const NAMES_KEY  = 'treseta_names_v1';
-const APP_VERSION = '1.8';
+const APP_VERSION = '1.9';
 
 // ===================== STATE =====================
 let G = null; // game state
@@ -1479,6 +1506,7 @@ function newGame(mode, names, opts) {
     rounds: [],
     targetScore: opts.targetScore || DEFAULT_TARGET,
     winsNeeded: opts.winsNeeded || 1,
+    lowWins: !!opts.lowWins,
     matchWins: Array(teamCount).fill(0),
     matchHistory: [], // niz odigranih partija unutar meča: {teams:[{name,score}], winnerIdx}
   };
@@ -1494,6 +1522,7 @@ function normalizeGame(g) {
   if (!g.saveId) g.saveId = genSaveId();
   if (!g.targetScore) g.targetScore = DEFAULT_TARGET;
   if (!g.winsNeeded) g.winsNeeded = 1;
+  if (typeof g.lowWins !== 'boolean') g.lowWins = false;
   if (!Array.isArray(g.matchWins)) g.matchWins = g.teams.map(()=>0);
   if (!Array.isArray(g.matchHistory)) g.matchHistory = [];
   return g;
@@ -1646,6 +1675,7 @@ function render() {
   renderPunti();
   renderSumHint();
   document.getElementById('hdrRound').textContent = `R${G.rounds.length + 1}`;
+  document.getElementById('hdrLowWins').style.display = G.lowWins ? '' : 'none';
   const hb = document.getElementById('historyBtn');
   hb.title = G.rounds.length ? `Povijest (${G.rounds.length})` : 'Povijest';
   hb.dataset.count = G.rounds.length || '';
@@ -1656,13 +1686,21 @@ function renderScoreboard() {
   const n = tc();
   sb.className = 'scoreboard ' + (n === 4 ? 't4' : n === 3 ? 't3' : 't2');
   const max = Math.max(...G.teams.map(t => t.score));
+  const min = Math.min(...G.teams.map(t => t.score));
   sb.innerHTML = '';
   G.teams.forEach(t => {
     const T = targetScore();
-    const isWin = t.score >= T && t.score === Math.max(...G.teams.filter(x=>x.score>=T).map(x=>x.score));
-    const isLead = !isWin && t.score === max && max > 0 && G.teams.filter(x=>x.score===max).length===1;
+    let cls;
+    if (G.lowWins) {
+      const isDanger = t.score >= T;
+      const isLead = !isDanger && t.score === min && G.teams.filter(x=>x.score===min).length===1;
+      cls = isDanger ? 'danger' : isLead ? 'leading' : '';
+    } else {
+      const isWin = t.score >= T && t.score === Math.max(...G.teams.filter(x=>x.score>=T).map(x=>x.score));
+      const isLead = !isWin && t.score === max && max > 0 && G.teams.filter(x=>x.score===max).length===1;
+      cls = isWin ? 'winning' : isLead ? 'leading' : '';
+    }
     const pct = Math.min(100, t.score / T * 100);
-    const cls = isWin ? 'winning' : isLead ? 'leading' : '';
     const card = document.createElement('div');
     card.className = `score-card ${cls}`;
     const mw = (G.matchWins && G.matchWins[t.id]) || 0;
@@ -1943,7 +1981,7 @@ function resetDraft() {
 
 // ===================== KRAJ PARTIJE / MEČA =====================
 function handleGameEnd() {
-  const sorted = [...G.teams].sort((a,b)=>b.score-a.score);
+  const sorted = [...G.teams].sort((a,b)=> G.lowWins ? a.score-b.score : b.score-a.score);
   const w = sorted[0];
   G.matchWins[w.id] = (G.matchWins[w.id]||0) + 1;
   G.matchHistory.push({
@@ -1989,8 +2027,8 @@ function showWinner() {
       </div>`).join('');
   } else {
     document.getElementById('winnerScore').textContent = w.score;
-    document.getElementById('winnerScoreCaption').textContent = '';
-    board.innerHTML = [...G.teams].sort((a,b)=>b.score-a.score).map((t,i)=>`
+    document.getElementById('winnerScoreCaption').textContent = G.lowWins ? 'najmanje bodova' : '';
+    board.innerHTML = [...G.teams].sort((a,b)=> G.lowWins ? a.score-b.score : b.score-a.score).map((t,i)=>`
       <div class="saved-row">
         <div class="saved-info"><div class="saved-name">${i+1}. ${esc(t.name)}</div></div>
         <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--red);">${t.score}</div>
@@ -2195,6 +2233,13 @@ document.getElementById('modeSegs').addEventListener('click', e=>{
   buildSetupNames();
 });
 
+document.getElementById('lowWinsSeg').addEventListener('click', e=>{
+  const btn = e.target.closest('.seg-btn');
+  if (!btn) return;
+  document.querySelectorAll('#lowWinsSeg .seg-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+});
+
 document.getElementById('startBtn').onclick = ()=>{
   let names, toRemember;
   if (setupMode === 'pairs') {
@@ -2220,9 +2265,11 @@ document.getElementById('startBtn').onclick = ()=>{
     seen.add(key);
   }
   const activeWinBtn = document.getElementById('winsInput');
+  const lowWinsBtn = document.querySelector('#lowWinsSeg .seg-btn.active');
   const opts = {
     targetScore: parseInt(document.getElementById('targetInput').value) || DEFAULT_TARGET,
     winsNeeded: Math.max(1, parseInt(activeWinBtn.value) || 1),
+    lowWins: lowWinsBtn ? lowWinsBtn.dataset.v === '1' : false,
   };
   newGame(setupMode, names, opts);
   rememberNames(toRemember);
@@ -2346,7 +2393,8 @@ function renderSavedList() {
     const wn = s.state.winsNeeded || 1;
     const scoreLine = s.state.teams.map(t=>`${t.name}: ${t.score}`).join(' · ');
     const matchLine = wn > 1 ? ` · partije ${s.state.teams.map(t=>(s.state.matchWins && s.state.matchWins[t.id])||0).join(':')}` : '';
-    const metaInfo = `${scoreLine} · ${s.state.rounds.length} rundi${matchLine}`;
+    const lowTag = s.state.lowWins ? '🔻 ' : '';
+    const metaInfo = `${lowTag}${scoreLine} · ${s.state.rounds.length} rundi${matchLine}`;
     row.innerHTML = `
       <div class="saved-info">
         <div class="saved-name">${esc(s.name)}</div>

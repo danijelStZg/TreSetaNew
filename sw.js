@@ -6,7 +6,7 @@
 // Kad objaviš novu verziju aplikacije, povisi broj u CACHE_VERSION
 // (npr. v2 -> v3). To prisili brisanje starog cachea.
 
-const CACHE_VERSION = 'treseta-v14';
+const CACHE_VERSION = 'treseta-v15';
 
 // Datoteke koje se predmemoriraju pri instalaciji (za offline rad)
 const PRECACHE_URLS = [
