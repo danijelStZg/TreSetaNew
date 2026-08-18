@@ -1450,7 +1450,7 @@ const DEFAULT_TARGET = 41;
 const SAVE_KEY   = 'treseta_saves_v2';
 const AUTO_KEY   = 'treseta_auto_v2';
 const NAMES_KEY  = 'treseta_names_v1';
-const APP_VERSION = '1.9';
+const APP_VERSION = '1.10';
 
 // ===================== STATE =====================
 let G = null; // game state
@@ -1723,11 +1723,12 @@ function renderPunti() {
   row.innerHTML = '';
   G.teams.forEach((t, i) => {
     const total = akuzeTotalForTeam(i);
+    const sign = G.lowWins ? '−' : '+';
     const f = document.createElement('div');
     f.className = 'punti-field';
     f.innerHTML = `
       <div class="pf-label">${esc(t.name)}</div>
-      <button type="button" class="pf-akuza-badge${total?' has':''}" id="pf-akuza-${i}">${total ? '+'+total : '⊕ akuže'}</button>
+      <button type="button" class="pf-akuza-badge${total?' has':''}" id="pf-akuza-${i}">${total ? sign+total : '⊕ akuže'}</button>
       <input class="pf-input" id="pi-${i}" type="number" inputmode="numeric"
         placeholder="0" min="0" max="11" value="${draft.punti[i]}">
     `;
@@ -1750,7 +1751,8 @@ function updatePuntiAkuzaBadge(i) {
   const badge = document.getElementById(`pf-akuza-${i}`);
   if (!badge) return;
   const total = akuzeTotalForTeam(i);
-  badge.textContent = total ? `+${total}` : '⊕ akuže';
+  const sign = G.lowWins ? '−' : '+';
+  badge.textContent = total ? `${sign}${total}` : '⊕ akuže';
   badge.classList.toggle('has', total > 0);
 }
 
@@ -1793,6 +1795,9 @@ function renderSumHint() {
   if (sum===11) { hint.textContent = '✓  ZBROJ: 11'; hint.className='sum-hint ok'; }
   else if (sum<11) { hint.textContent = `ZBROJ: ${sum}  —  FALI ${11-sum}`; hint.className='sum-hint under'; }
   else { hint.textContent = `ZBROJ: ${sum}  —  VIŠAK ${sum-11}!`; hint.className='sum-hint over'; }
+  if (G.lowWins && draft.punti.some(v=>parseInt(v)===11)) {
+    hint.textContent += '  ·  🔻 KAPOT: ide na −11';
+  }
 }
 
 // ===================== AKUŽE (popup preko oznake iznad punata) =====================
@@ -1866,12 +1871,22 @@ function renderHistory() {
     G.teams.forEach((t, i) => {
       const p = r.punti[i]||0;
       const a = r.akuzPts[i]||0;
+      const delta = Array.isArray(r.scoreDelta) ? r.scoreDelta[i] : p+a;
       const akNote = descAk(r.akuzi[i]||{});
+      let detail = '';
+      if (G.lowWins) {
+        const scoredP = (p === 11) ? -11 : p;
+        if (a || scoredP !== p) {
+          detail = ` <small style="color:var(--gold);font-weight:600;">(${scoredP}${a?` − ${a}`:''})</small>`;
+        }
+      } else if (a) {
+        detail = ` <small style="color:var(--gold);font-weight:600;">(${p}+${a})</small>`;
+      }
       lines += `<div class="hist-line">
         <span class="hist-name">${esc(t.name)}</span>
-        <span class="hist-pts">${p+a}${a?` <small style="color:var(--gold);font-weight:600;">(${p}+${a})</small>`:''}</span>
+        <span class="hist-pts"${delta<0?' style="color:var(--red);"':''}>${delta}${detail}</span>
       </div>`;
-      if (akNote) lines += `<div class="hist-akuzi">${esc(t.name)}: ${akNote}</div>`;
+      if (akNote) lines += `<div class="hist-akuzi">${esc(t.name)}: ${akNote}${G.lowWins?' (u minus)':''}</div>`;
     });
     row.innerHTML = `
       <div class="hist-num">${idx+1}</div>
@@ -1906,7 +1921,10 @@ function deleteRound(idx) {
     msg:`Obrisati rundu ${idx+1}? Bodovi će se preračunati.`,
     onOk:()=>{
       const r = G.rounds[idx];
-      G.teams.forEach((t,i)=>{ t.score-=(r.punti[i]||0)+(r.akuzPts[i]||0); });
+      G.teams.forEach((t,i)=>{
+        const delta = Array.isArray(r.scoreDelta) ? r.scoreDelta[i] : (r.punti[i]||0)+(r.akuzPts[i]||0);
+        t.score -= (delta||0);
+      });
       G.rounds.splice(idx,1);
       render(); autoSave(); showToast('Runda obrisana');
     }
@@ -1936,14 +1954,22 @@ function calcRoundTotals() {
     const p = parseInt(draft.punti[i])||0;
     let a = 0;
     AKUZI.forEach(ak=>{ a+=(teamAkuzi[i][ak.key]||0)*ak.pts; });
-    return {punti:p, akuzPts:a, total:p+a, akuziDetail: teamAkuzi[i]};
+    let scoreDelta;
+    if (G.lowWins) {
+      // "Tko manje": akuže idu u minus, a kapot (svih 11 punata) se bilježi kao -11
+      const scoredP = (p === 11) ? -11 : p;
+      scoreDelta = scoredP - a;
+    } else {
+      scoreDelta = p + a;
+    }
+    return {punti:p, akuzPts:a, total:scoreDelta, akuziDetail: teamAkuzi[i]};
   });
 }
 
 function addRound() {
   const totals = calcRoundTotals();
   const sum = totals.reduce((a,t)=>a+t.punti,0);
-  const anyVal = totals.some(t=>t.total>0);
+  const anyVal = totals.some(t=>t.punti>0 || t.akuzPts>0);
   if (!anyVal) { showToast('Unesi punte ili akuže'); return; }
   if (sum > 11) { showToast(`Zbroj je ${sum} — ne može biti više od 11`); return; }
   if (sum < 11 && sum > 0) {
@@ -1961,6 +1987,7 @@ function commitRound(totals) {
   G.rounds.push({
     punti: totals.map(t=>t.punti),
     akuzPts: totals.map(t=>t.akuzPts),
+    scoreDelta: totals.map(t=>t.total),
     akuzi: totals.map(t=>({...t.akuziDetail})), // per-team aggregated
   });
   G.teams.forEach((t,i)=>{ t.score+=totals[i].total; });
