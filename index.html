@@ -1129,7 +1129,7 @@ body {
 
 /* Saved list */
 .saved-row {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: flex-start; gap: 10px;
   padding: 14px 16px;
   background: var(--bg-soft);
   border: 1px solid var(--border-soft);
@@ -1137,8 +1137,29 @@ body {
   margin-bottom: 8px;
 }
 .saved-info { flex: 1; min-width: 0; }
-.saved-name { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.saved-meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--faint); }
+.saved-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+  white-space: normal;
+  overflow-wrap: break-word;
+  line-height: 1.3;
+}
+.saved-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--faint);
+  white-space: normal;
+  overflow-wrap: break-word;
+  line-height: 1.6;
+}
+.saved-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
 .hist-match-line {
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
@@ -1502,7 +1523,7 @@ const DEFAULT_TARGET = 41;
 const SAVE_KEY   = 'treseta_saves_v2';
 const AUTO_KEY   = 'treseta_auto_v2';
 const NAMES_KEY  = 'treseta_names_v1';
-const APP_VERSION = '1.12';
+const APP_VERSION = '1.13';
 
 // ===================== STATE =====================
 let G = null; // game state
@@ -1533,6 +1554,13 @@ function genSaveId() {
 // ===================== SPREMLJENA IMENA =====================
 function getSavedNames() {
   try { return JSON.parse(localStorage.getItem(NAMES_KEY) || '[]'); } catch { return []; }
+}
+// Abecedno sortiranje (hrvatska lokalizacija, uzlazno po prvom slovu)
+function sortNamesAlpha(list) {
+  return [...list].sort((a,b)=> a.localeCompare(b, 'hr', {sensitivity:'base'}));
+}
+function getSavedNamesAlpha() {
+  return sortNamesAlpha(getSavedNames());
 }
 function rememberNames(names) {
   try {
@@ -1699,7 +1727,7 @@ function autoSaveFinished() {
   const d = new Date();
   const p = n => String(n).padStart(2,'0');
   const dateStr = `${p(d.getDate())}.${p(d.getMonth()+1)}.${d.getFullYear()}`;
-  const baseName = `${G.teams.map(t=>t.name).join(' vs ')} — ${dateStr}`.slice(0, 60);
+  const baseName = `${G.teams.map(t=>t.name).join(' vs ')} — ${dateStr}`.slice(0, 90);
   // Ukloni eventualni raniji (pauzirani) zapis ISTE partije/meča da se ne duplicira
   const saves = getSaves().filter(s => !(s.state && s.state.saveId === G.saveId));
   let name = baseName;
@@ -1734,7 +1762,7 @@ function pauseCurrentGame() {
     const d = new Date();
     const p = n => String(n).padStart(2,'0');
     const dateStr = `${p(d.getDate())}.${p(d.getMonth()+1)}.${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
-    const baseName = `${G.teams.map(t=>t.name).join(' vs ')} — pauzirano ${dateStr}`.slice(0, 60);
+    const baseName = `${G.teams.map(t=>t.name).join(' vs ')} — pauzirano ${dateStr}`.slice(0, 90);
     let candidate = baseName;
     let n = 2;
     while (saves.some(s => s.name === candidate)) {
@@ -2268,7 +2296,7 @@ function attachNameDropdown(inp, dropdown) {
   }
   function renderList() {
     const used = otherValues();
-    const roster = getSavedNames();
+    const roster = getSavedNamesAlpha();
     if (!roster.length) {
       dropdown.innerHTML = '<div class="name-opt name-opt-empty">Nema spremljenih igrača — dodaj ih preko "👤 Igrači" u meniju</div>';
       dropdown.classList.add('open');
@@ -2388,7 +2416,8 @@ document.getElementById('startBtn').onclick = ()=>{
       const n1 = inp1.value.trim();
       const n2 = inp2.value.trim();
       toRemember.push(n1, n2);
-      return `${n1} i ${n2}`;
+      const pair = sortNamesAlpha([n1, n2]);
+      return `${pair[0]} i ${pair[1]}`;
     });
   } else {
     names = allInputs.map(inp=> inp.value.trim());
@@ -2523,7 +2552,7 @@ document.getElementById('playerAddInput').addEventListener('keydown', e=>{
 
 function renderPlayersList() {
   const wrap = document.getElementById('playersList');
-  const roster = getSavedNames();
+  const roster = getSavedNamesAlpha();
   if (!roster.length) {
     wrap.innerHTML = '<div class="empty-hist">Nema spremljenih igrača — dodaj prvog iznad</div>';
     return;
@@ -2549,7 +2578,10 @@ function renderPlayersList() {
       msg: `Obrisati "${name}" iz popisa? Ovo ne utječe na već odigrane/pauzirane partije.`,
       onOk: () => { deletePlayerFromRoster(name); renderPlayersList(); },
     });
-    row.appendChild(eb); row.appendChild(db);
+    const actions = document.createElement('div');
+    actions.className = 'saved-actions';
+    actions.appendChild(eb); actions.appendChild(db);
+    row.appendChild(actions);
     wrap.appendChild(row);
   });
 }
@@ -2594,7 +2626,10 @@ function renderSavedList() {
     db.className='sl-btn d'; db.textContent='✕'; db.title='Obriši';
     db.onclick=()=>openConfirm({title:'Obrisati?',msg:`Obrisati "${s.name}"?`,
       onOk:()=>{ setSaves(getSaves().filter(x=>x.name!==s.name)); renderSavedList(); }});
-    row.appendChild(lb); row.appendChild(db);
+    const actions = document.createElement('div');
+    actions.className = 'saved-actions';
+    actions.appendChild(lb); actions.appendChild(db);
+    row.appendChild(actions);
     wrap.appendChild(row);
   });
 }
