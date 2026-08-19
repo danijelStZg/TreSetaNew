@@ -1170,11 +1170,19 @@ body {
   border-top: 1px dashed var(--border-soft);
   margin: 6px 0;
 }
+.hist-participants {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dim);
+  margin-bottom: 6px;
+  overflow-wrap: break-word;
+}
 .hist-date {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   font-weight: 500;
   color: var(--faint);
+  margin-bottom: 6px;
 }
 .sl-btn { width: 40px; height: 40px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: transform 0.15s; }
 .sl-btn:active { transform: scale(0.92); }
@@ -1533,7 +1541,7 @@ const DEFAULT_TARGET = 41;
 const SAVE_KEY   = 'treseta_saves_v2';
 const AUTO_KEY   = 'treseta_auto_v2';
 const NAMES_KEY  = 'treseta_names_v1';
-const APP_VERSION = '1.14';
+const APP_VERSION = '1.16';
 
 // ===================== STATE =====================
 let G = null; // game state
@@ -2659,39 +2667,46 @@ function renderMatchHistoryList() {
     const wn = s.state.winsNeeded || 1;
     const teams = s.state.teams;
     const mh = s.state.matchHistory || [];
-    let winnerName, linesHtml = '', summaryLine, divider = '';
+    let winnerName, participantsLine, linesHtml = '', summaryLine, divider = '';
 
     if (mh.length) {
+      let winnerTeam;
       if (s.state.matchWins) {
-        const w = teams.reduce((best,t)=> (s.state.matchWins[t.id]||0) > (s.state.matchWins[best.id]||0) ? t : best, teams[0]);
-        winnerName = w.name;
+        winnerTeam = teams.reduce((best,t)=> (s.state.matchWins[t.id]||0) > (s.state.matchWins[best.id]||0) ? t : best, teams[0]);
       } else {
-        winnerName = mh[mh.length-1].teams[mh[mh.length-1].winnerIdx].name;
+        const lastWinnerName = mh[mh.length-1].teams[mh[mh.length-1].winnerIdx].name;
+        winnerTeam = teams.find(t=>t.name===lastWinnerName) || teams[0];
       }
+      const orderedTeams = [winnerTeam, ...teams.filter(t=>t.id!==winnerTeam.id)];
+      winnerName = winnerTeam.name;
+      participantsLine = orderedTeams.map(t=>esc(t.name)).join(' - ');
 
       if (mh.length > 1) {
         linesHtml = mh.map((g, gi) => {
-          const scoreStr = g.teams.map(t=>t.score).join(' : ');
+          const scoreStr = orderedTeams.map(t=> (g.teams[t.id]||{}).score||0).join(' : ');
           return `<div class="hist-match-line">Partija ${gi+1} — ${scoreStr}</div>`;
         }).join('');
         divider = '<div class="hist-divider"></div>';
         const totalStr = (wn > 1 && s.state.matchWins)
-          ? teams.map(t=>s.state.matchWins[t.id]||0).join(' : ')
-          : mh[mh.length-1].teams.map(t=>t.score).join(' : ');
+          ? orderedTeams.map(t=> s.state.matchWins[t.id]||0).join(' : ')
+          : orderedTeams.map(t=> (mh[mh.length-1].teams[t.id]||{}).score||0).join(' : ');
         summaryLine = `Ukupno — ${totalStr}`;
       } else {
-        summaryLine = `Rezultat — ${mh[0].teams.map(t=>t.score).join(' : ')}`;
+        summaryLine = `Rezultat — ${orderedTeams.map(t=> (mh[0].teams[t.id]||{}).score||0).join(' : ')}`;
       }
     } else {
       // Fallback za starije spremljene partije bez matchHistory podataka
       const sorted = [...teams].sort((a,b)=>b.score-a.score);
       winnerName = sorted[0].name;
+      participantsLine = sorted.map(t=>esc(t.name)).join(' - ');
       summaryLine = `Rezultat — ${sorted.map(t=>t.score).join(' : ')}  ·  ${s.state.rounds.length} rundi`;
     }
 
     row.innerHTML = `
       <div class="saved-info">
-        <div class="saved-name">🏆 ${esc(winnerName)} <span class="hist-date">(${fmt(s.ts)})</span></div>
+        <div class="hist-participants">${participantsLine}</div>
+        <div class="saved-name">🏆 ${esc(winnerName)}</div>
+        <div class="hist-date">${fmt(s.ts)}</div>
         ${divider}
         ${linesHtml}
         ${divider}
