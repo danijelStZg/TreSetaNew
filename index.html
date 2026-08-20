@@ -1183,6 +1183,10 @@ body {
   border-top: 1px dashed var(--border-soft);
   margin: 6px 0;
 }
+.hist-total-line {
+  font-weight: 700;
+  color: var(--text);
+}
 .hist-participants {
   font-size: 12px;
   font-weight: 600;
@@ -1363,31 +1367,33 @@ body {
       <button class="seg-btn" data-m="2">2</button>
       <button class="seg-btn" data-m="3">3</button>
       <button class="seg-btn" data-m="4">4</button>
-      <button class="seg-btn active" data-m="pairs">2 Para</button>
+      <button class="seg-btn" data-m="pairs">2 Para</button>
     </div>
-    <div class="modal-label" id="namesLabel">Imena ekipa</div>
-    <div id="setupNamesWarning" style="display:none; font-size:12px; color:var(--red); background:color-mix(in srgb, var(--red) 12%, transparent); border:1px solid color-mix(in srgb, var(--red) 30%, transparent); border-radius:10px; padding:8px 10px; margin-bottom:10px; line-height:1.4;"></div>
-    <div id="setupNames"></div>
-    <div class="modal-label">Cilj bodova i broj partija</div>
-    <div class="setup-num-row">
-      <div class="setup-num-field">
-        <div class="pf-label">Bodova</div>
-        <input type="number" id="targetInput" value="41" min="11" max="99" inputmode="numeric">
+    <div id="setupRest">
+      <div class="modal-label" id="namesLabel">Imena ekipa</div>
+      <div id="setupNamesWarning" style="display:none; font-size:12px; color:var(--red); background:color-mix(in srgb, var(--red) 12%, transparent); border:1px solid color-mix(in srgb, var(--red) 30%, transparent); border-radius:10px; padding:8px 10px; margin-bottom:10px; line-height:1.4;"></div>
+      <div id="setupNames"></div>
+      <div class="modal-label">Cilj bodova i broj partija</div>
+      <div class="setup-num-row">
+        <div class="setup-num-field">
+          <div class="pf-label">Bodova</div>
+          <input type="number" id="targetInput" value="41" min="11" max="99" inputmode="numeric">
+        </div>
+        <div class="setup-num-field">
+          <div class="pf-label">Partija</div>
+          <input type="number" id="winsInput" value="1" min="1" max="21" inputmode="numeric">
+        </div>
       </div>
-      <div class="setup-num-field">
-        <div class="pf-label">Partija</div>
-        <input type="number" id="winsInput" value="1" min="1" max="21" inputmode="numeric">
+      <div class="modal-label">Način bodovanja</div>
+      <div class="seg" id="lowWinsSeg">
+        <button class="seg-btn active" data-v="0">Tko više</button>
+        <button class="seg-btn" data-v="1">🔻 Tko manje</button>
       </div>
+      <div style="font-size:11px; color:var(--faint); margin:-8px 2px 4px; line-height:1.4;">"Tko manje": tko prvi dosegne cilj bodova gubi partiju — pobjeđuje ekipa s manje bodova.</div>
     </div>
-    <div class="modal-label">Način bodovanja</div>
-    <div class="seg" id="lowWinsSeg">
-      <button class="seg-btn active" data-v="0">Tko više</button>
-      <button class="seg-btn" data-v="1">🔻 Tko manje</button>
-    </div>
-    <div style="font-size:11px; color:var(--faint); margin:-8px 2px 4px; line-height:1.4;">"Tko manje": tko prvi dosegne cilj bodova gubi partiju — pobjeđuje ekipa s manje bodova.</div>
     <div class="modal-btns" style="margin-top:20px;">
       <button class="m-btn m-btn-ghost" id="setupCancelBtn">Odustani</button>
-      <button class="m-btn m-btn-red" id="startBtn">Započni partiju</button>
+      <button class="m-btn m-btn-red" id="startBtn" style="display:none;">Započni partiju</button>
     </div>
   </div>
 </div>
@@ -1494,6 +1500,15 @@ body {
       <div class="rule-head">Kraj partije</div>
       <div class="rule-body">Pobjeđuje ekipa koja prva dostigne <strong>41 bod</strong>. Ako prijeđu obje u istoj rundi, pobjeđuje ona s više bodova.</div>
     </div>
+    <div class="rule-row">
+      <div class="rule-head">🔻 Način "Tko manje"</div>
+      <div class="rule-body">
+        Sve je obrnuto: tko prvi dosegne cilj bodova (npr. 41), taj <strong>gubi</strong> tu partiju — pobjeđuje ekipa s <strong>manje</strong> bodova.<br><br>
+        <strong>Akuže idu u minus</strong> — svaka prijavljena akuža oduzima bodove umjesto da ih dodaje.<br><br>
+        <strong>Kapot</strong> (osvojenih svih 11 punata u rundi) bilježi se kao <strong>−11</strong> umjesto +11 — dakle u ovom modu je kapot loš rezultat, ne dobar.<br><br>
+        Kod meča na više partija, pobjednik meča je i dalje onaj tko prvi skupi traženi broj pobjeđenih partija — samo je definicija "pobjede partije" obrnuta.
+      </div>
+    </div>
     <div class="modal-btns single" style="margin-top:12px;">
       <button class="m-btn m-btn-ghost" id="rulesClose">Zatvori</button>
     </div>
@@ -1557,7 +1572,7 @@ const DEFAULT_TARGET = 41;
 const SAVE_KEY   = 'treseta_saves_v2';
 const AUTO_KEY   = 'treseta_auto_v2';
 const NAMES_KEY  = 'treseta_names_v1';
-const APP_VERSION = '1.18';
+const APP_VERSION = '1.19';
 
 // ===================== STATE =====================
 let G = null; // game state
@@ -2213,6 +2228,13 @@ function showWinner() {
   autoSaveFinished();
   clearAuto();
   G.finished = true; // označi live objekt kao završen (spriječava lažno upozorenje kod "Nova partija")
+  lastFinishedSetup = {
+    mode: G.mode,
+    names: G.teams.map(t=>t.name),
+    targetScore: G.targetScore,
+    winsNeeded: G.winsNeeded,
+    lowWins: G.lowWins,
+  };
 }
 
 // ===================== SHEET HELPERS =====================
@@ -2228,7 +2250,6 @@ function closeSheet(id, ovId) {
 // ===================== MODAL HELPERS =====================
 function openM(id) {
   if (id === 'menuModal') updateMenuState();
-  if (id === 'setupModal') buildSetupNames();
   document.getElementById(id).classList.add('open');
 }
 function closeM(id) { document.getElementById(id).classList.remove('open'); }
@@ -2238,11 +2259,16 @@ function updateMenuState() {
   const pauseBtn = document.getElementById('pauseBtn');
   const saveBtn = document.getElementById('saveBtn');
   const loadBtn = document.getElementById('loadBtn');
+  const matchHistBtn = document.getElementById('matchHistBtn');
   if (pauseBtn) pauseBtn.style.display = G ? '' : 'none';
   if (saveBtn) saveBtn.style.display = G ? '' : 'none';
   if (loadBtn) {
     const hasPaused = getSaves().some(s=>!s.state.finished);
     loadBtn.style.display = hasPaused ? '' : 'none';
+  }
+  if (matchHistBtn) {
+    const hasFinished = getSaves().some(s=>s.state.finished);
+    matchHistBtn.style.display = hasFinished ? '' : 'none';
   }
 }
 
@@ -2325,7 +2351,17 @@ function fmt(ts) {
 }
 
 // ===================== SETUP =====================
-let setupMode = 'pairs';
+let setupMode = null; // null = progresivni prikaz (korisnik još nije odabrao broj igrača)
+// Postavke zadnje ODIGRANE (završene) partije u ovoj sesiji - koriste se za predispunjavanje "Nova partija"
+let lastFinishedSetup = null;
+
+// Otvori postavku nove partije: ako postoje uvjeti zadnje odigrane partije, predispuni ih
+// (i dalje se sve može promijeniti); inače progresivno prikaži samo odabir broja igrača.
+function openSetup() {
+  setupMode = lastFinishedSetup ? lastFinishedSetup.mode : null;
+  buildSetupNames(true);
+  openM('setupModal');
+}
 
 // Padajući izbornik sa spremljenim imenima (bez oblačića) - input ostaje slobodan za upis
 // Padajući izbornik ISKLJUČIVO sa spremljenim igračima (bez slobodnog upisa) - sprječava duple igrače
@@ -2385,10 +2421,28 @@ function buildNameField(placeholder) {
   return { wrap, inp };
 }
 
-function buildSetupNames() {
+function buildSetupNames(initial) {
   const wrap = document.getElementById('setupNames');
   const label = document.getElementById('namesLabel');
   const warn = document.getElementById('setupNamesWarning');
+  const rest = document.getElementById('setupRest');
+  const startBtn = document.getElementById('startBtn');
+  const btnsWrap = startBtn.closest('.modal-btns');
+
+  // Ažuriraj aktivni gumb za broj igrača (ili nijedan ako mod još nije odabran)
+  document.querySelectorAll('#modeSegs .seg-btn').forEach(b => b.classList.toggle('active', b.dataset.m === setupMode));
+
+  if (!setupMode) {
+    // Progresivni prikaz: dok korisnik ne odabere broj igrača, ostatak forme je skriven
+    rest.style.display = 'none';
+    startBtn.style.display = 'none';
+    btnsWrap.classList.add('single');
+    return;
+  }
+  rest.style.display = '';
+  startBtn.style.display = '';
+  btnsWrap.classList.remove('single');
+
   wrap.innerHTML = '';
 
   const roster = getSavedNames();
@@ -2399,6 +2453,10 @@ function buildSetupNames() {
   } else {
     warn.style.display = 'none';
   }
+
+  // Predispuni imenima iz zadnje ODIGRANE partije (samo pri prvom otvaranju, i samo ako se mod poklapa)
+  const prefill = (initial && lastFinishedSetup && lastFinishedSetup.mode === setupMode) ? lastFinishedSetup.names : null;
+  const rosterHas = n => roster.some(r => r.toLowerCase() === (n||'').toLowerCase());
 
   if (setupMode === 'pairs') {
     label.textContent = 'Igrači po ekipama';
@@ -2411,10 +2469,13 @@ function buildSetupNames() {
       group.appendChild(title);
       const fieldsRow = document.createElement('div');
       fieldsRow.className = 'pair-fields-row';
+      // Prošli spremljeni naziv ekipe je oblika "Ime1 i Ime2" - razdvoji natrag na dva igrača
+      const pairParts = prefill ? (prefill[team]||'').split(' i ').map(s=>s.trim()) : [];
       for (let slot = 0; slot < 2; slot++) {
         const { wrap: fieldWrap, inp } = buildNameField(`Igrač ${team*2 + slot + 1}`);
         inp.dataset.team = String(team);
         inp.dataset.slot = String(slot);
+        if (pairParts[slot] && rosterHas(pairParts[slot])) inp.value = pairParts[slot];
         fieldsRow.appendChild(fieldWrap);
       }
       group.appendChild(fieldsRow);
@@ -2426,17 +2487,24 @@ function buildSetupNames() {
     for (let i = 0; i < count; i++) {
       const { wrap: fieldWrap, inp } = buildNameField(`Igrač ${i+1}`);
       inp.dataset.slot = String(i);
+      if (prefill && prefill[i] && rosterHas(prefill[i])) inp.value = prefill[i];
       wrap.appendChild(fieldWrap);
     }
+  }
+
+  if (initial && lastFinishedSetup) {
+    document.getElementById('targetInput').value = lastFinishedSetup.targetScore || DEFAULT_TARGET;
+    document.getElementById('winsInput').value = lastFinishedSetup.winsNeeded || 1;
+    document.querySelectorAll('#lowWinsSeg .seg-btn').forEach(b =>
+      b.classList.toggle('active', (b.dataset.v === '1') === !!lastFinishedSetup.lowWins));
   }
 }
 
 document.getElementById('modeSegs').addEventListener('click', e=>{
-  if (!e.target.classList.contains('seg-btn')) return;
-  document.querySelectorAll('#modeSegs .seg-btn').forEach(b=>b.classList.remove('active'));
-  e.target.classList.add('active');
-  setupMode = e.target.dataset.m;
-  buildSetupNames();
+  const btn = e.target.closest('.seg-btn');
+  if (!btn) return;
+  setupMode = btn.dataset.m;
+  buildSetupNames(false);
 });
 
 document.getElementById('lowWinsSeg').addEventListener('click', e=>{
@@ -2531,10 +2599,10 @@ document.getElementById('newGameBtn').onclick = ()=>{
       title:'Nova partija?',
       msg:'Trenutna partija još nije gotova. Možeš je pauzirati i nastaviti kasnije, ili je trajno odbaciti.',
       okLabel:'Odbaci', extraLabel:'⏸ Pauziraj',
-      onExtra:()=>{ pauseCurrentGame(); showToast('Partija pauzirana ✓'); openM('setupModal'); },
-      onOk:()=>{ clearAuto(); G=null; openM('setupModal'); }
+      onExtra:()=>{ pauseCurrentGame(); showToast('Partija pauzirana ✓'); openSetup(); },
+      onOk:()=>{ clearAuto(); G=null; openSetup(); }
     });
-  } else { G=null; openM('setupModal'); }
+  } else { G=null; openSetup(); }
 };
 
 document.getElementById('pauseBtn').onclick = ()=>{
@@ -2634,7 +2702,7 @@ function renderPlayersList() {
 document.getElementById('rulesBtn').onclick = ()=>{ closeM('menuModal'); openM('rulesModal'); };
 document.getElementById('rulesClose').onclick = ()=>{ closeM('rulesModal'); openM('menuModal'); };
 
-document.getElementById('newAfterWin').onclick = ()=>{ closeM('winnerModal'); G=null; openM('setupModal'); };
+document.getElementById('newAfterWin').onclick = ()=>{ closeM('winnerModal'); G=null; openSetup(); };
 document.getElementById('menuAfterWin').onclick = ()=>{ closeM('winnerModal'); G=null; openM('menuModal'); };
 document.getElementById('nextGameBtn').onclick = ()=>{ closeM('gameWinnerModal'); nextGameInMatch(); };
 
@@ -2688,6 +2756,10 @@ function renderMatchHistoryList() {
     wrap.innerHTML = '<div class="empty-hist">Nema odigranih partija</div>';
     return;
   }
+  // Formatira niz brojeva za red, podebljano i zeleno označava pobjednikov broj (po indexu winnerIdx unutar niza)
+  function fmtScoreRow(values, winnerIdx) {
+    return values.map((v,i)=> i===winnerIdx ? `<strong style="color:var(--green);">${v}</strong>` : `${v}`).join(' : ');
+  }
   wrap.innerHTML = '';
   saves.forEach(s=>{
     const row = document.createElement('div');
@@ -2711,23 +2783,26 @@ function renderMatchHistoryList() {
 
       if (mh.length > 1) {
         linesHtml = mh.map((g, gi) => {
-          const scoreStr = orderedTeams.map(t=> (g.teams[t.id]||{}).score||0).join(' : ');
-          return `<div class="hist-match-line">Partija ${gi+1} — ${scoreStr}</div>`;
+          const values = orderedTeams.map(t=> (g.teams[t.id]||{}).score||0);
+          const winIdx = orderedTeams.findIndex(t=>t.id===g.winnerIdx);
+          return `<div class="hist-match-line">Partija ${gi+1} — ${fmtScoreRow(values, winIdx)}</div>`;
         }).join('');
         divider = '<div class="hist-divider"></div>';
-        const totalStr = (wn > 1 && s.state.matchWins)
-          ? orderedTeams.map(t=> s.state.matchWins[t.id]||0).join(' : ')
-          : orderedTeams.map(t=> (mh[mh.length-1].teams[t.id]||{}).score||0).join(' : ');
-        summaryLine = `Ukupno — ${totalStr}`;
+        const totalValues = (wn > 1 && s.state.matchWins)
+          ? orderedTeams.map(t=> s.state.matchWins[t.id]||0)
+          : orderedTeams.map(t=> (mh[mh.length-1].teams[t.id]||{}).score||0);
+        summaryLine = `Ukupno — ${fmtScoreRow(totalValues, 0)}`; // orderedTeams[0] je uvijek pobjednik
       } else {
-        summaryLine = `Rezultat — ${orderedTeams.map(t=> (mh[0].teams[t.id]||{}).score||0).join(' : ')}`;
+        const values = orderedTeams.map(t=> (mh[0].teams[t.id]||{}).score||0);
+        const winIdx = orderedTeams.findIndex(t=>t.id===mh[0].winnerIdx);
+        summaryLine = `Rezultat — ${fmtScoreRow(values, winIdx)}`;
       }
     } else {
       // Fallback za starije spremljene partije bez matchHistory podataka
       const sorted = [...teams].sort((a,b)=>b.score-a.score);
       winnerName = sorted[0].name;
       participantsLine = sorted.map(t=>esc(t.name)).join(' / ');
-      summaryLine = `Rezultat — ${sorted.map(t=>t.score).join(' : ')}  ·  ${s.state.rounds.length} rundi`;
+      summaryLine = `Rezultat — ${fmtScoreRow(sorted.map(t=>t.score), 0)}  ·  ${s.state.rounds.length} rundi`;
     }
 
     row.innerHTML = `
@@ -2738,7 +2813,7 @@ function renderMatchHistoryList() {
         ${divider}
         ${linesHtml}
         ${divider}
-        <div class="saved-meta">${summaryLine}</div>
+        <div class="hist-match-line hist-total-line">${summaryLine}</div>
       </div>
     `;
     const db = document.createElement('button');
