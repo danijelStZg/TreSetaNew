@@ -1571,7 +1571,7 @@ const DEFAULT_TARGET = 41;
 const SAVE_KEY   = 'treseta_saves_v2';
 const AUTO_KEY   = 'treseta_auto_v2';
 const NAMES_KEY  = 'treseta_names_v1';
-const APP_VERSION = '1.20';
+const APP_VERSION = '1.21';
 
 // ===================== STATE =====================
 let G = null; // game state
@@ -2826,15 +2826,19 @@ function bootApp() {
 (function(){
   const splash = document.getElementById('splash');
   let booted = false;
-  function go() {
+  function go(e) {
     if (booted) return;
     booted = true;
+    // Spriječi da preglednik nakon touchstart-a naknadno emitira sintetički "click"
+    // na istoj poziciji (koji bi inače "propao" kroz splash na gumb ispod, npr. u meniju,
+    // jer splash odmah dobiva pointer-events:none) - klasični "ghost click" na Androidu.
+    if (e && e.cancelable) e.preventDefault();
     splash.classList.add('hide');
     bootApp();
     setTimeout(()=>{ splash.style.display = 'none'; }, 550);
   }
+  splash.addEventListener('touchstart', go, {passive:false});
   splash.addEventListener('click', go);
-  splash.addEventListener('touchstart', go, {passive:true});
 })();
 
 // ===================== PWA / SERVICE WORKER =====================
