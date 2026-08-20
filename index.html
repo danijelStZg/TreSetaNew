@@ -1407,7 +1407,6 @@ body {
       <button class="m-btn m-btn-ghost" id="playersBtn" style="margin-bottom:8px;">👤 Igrači (unos/izmjena)</button>
       <button class="m-btn m-btn-ghost" id="pauseBtn" style="margin-bottom:8px;">⏸ Pauziraj partiju</button>
       <button class="m-btn m-btn-ghost" id="loadBtn" style="margin-bottom:8px;">▶ Nastavi pauziranu partiju</button>
-      <button class="m-btn m-btn-ghost" id="saveBtn" style="margin-bottom:8px;">Spremi partiju (naziv)</button>
       <button class="m-btn m-btn-ghost" id="matchHistBtn" style="margin-bottom:8px;">Povijest odigranih partija</button>
       <button class="m-btn m-btn-ghost" id="rulesBtn" style="margin-bottom:8px;">Pravila i akuže</button>
       <div class="theme-toggle-wrap" style="margin-bottom:8px;">
@@ -1505,7 +1504,7 @@ body {
       <div class="rule-body">
         Sve je obrnuto: tko prvi dosegne cilj bodova (npr. 41), taj <strong>gubi</strong> tu partiju — pobjeđuje ekipa s <strong>manje</strong> bodova.<br><br>
         <strong>Akuže idu u minus</strong> — svaka prijavljena akuža oduzima bodove umjesto da ih dodaje.<br><br>
-        <strong>Kapot</strong> (osvojenih svih 11 punata u rundi) bilježi se kao <strong>−11</strong> umjesto +11 — dakle u ovom modu je kapot loš rezultat, ne dobar.<br><br>
+        <strong>Kapot</strong> (osvojenih svih 11 punata u rundi) bilježi se kao <strong>−11</strong> umjesto +11 — u ovom modu je to <strong>odličan rezultat</strong>, jer ti smanjuje bodove za 11, a cilj je imati što manje bodova.<br><br>
         Kod meča na više partija, pobjednik meča je i dalje onaj tko prvi skupi traženi broj pobjeđenih partija — samo je definicija "pobjede partije" obrnuta.
       </div>
     </div>
@@ -1572,7 +1571,7 @@ const DEFAULT_TARGET = 41;
 const SAVE_KEY   = 'treseta_saves_v2';
 const AUTO_KEY   = 'treseta_auto_v2';
 const NAMES_KEY  = 'treseta_names_v1';
-const APP_VERSION = '1.19';
+const APP_VERSION = '1.20';
 
 // ===================== STATE =====================
 let G = null; // game state
@@ -1760,15 +1759,6 @@ function clearAuto() { try { localStorage.removeItem(AUTO_KEY); } catch(e) {} }
 function loadAuto() { try { return JSON.parse(localStorage.getItem(AUTO_KEY)||'null'); } catch { return null; } }
 function getSaves() { try { return JSON.parse(localStorage.getItem(SAVE_KEY)||'[]'); } catch { return []; } }
 function setSaves(a) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(a)); } catch(e) {} }
-function saveAs(name) {
-  const saves = getSaves();
-  const idx = saves.findIndex(s => s.name === name);
-  const entry = { name, ts: Date.now(), state: JSON.parse(JSON.stringify(G)) };
-  if (idx >= 0) saves[idx] = entry; else saves.unshift(entry);
-  if (saves.length > 15) saves.length = 15;
-  setSaves(saves);
-  showToast('Spremljeno ✓');
-}
 
 // Automatsko spremanje završene partije (jedinstven naziv s datumom)
 function autoSaveFinished() {
@@ -2257,11 +2247,9 @@ function closeM(id) { document.getElementById(id).classList.remove('open'); }
 // Prikaži/sakrij "Pauziraj partiju" ovisno o tome postoji li aktivna partija
 function updateMenuState() {
   const pauseBtn = document.getElementById('pauseBtn');
-  const saveBtn = document.getElementById('saveBtn');
   const loadBtn = document.getElementById('loadBtn');
   const matchHistBtn = document.getElementById('matchHistBtn');
   if (pauseBtn) pauseBtn.style.display = G ? '' : 'none';
-  if (saveBtn) saveBtn.style.display = G ? '' : 'none';
   if (loadBtn) {
     const hasPaused = getSaves().some(s=>!s.state.finished);
     loadBtn.style.display = hasPaused ? '' : 'none';
@@ -2614,25 +2602,6 @@ document.getElementById('pauseBtn').onclick = ()=>{
 };
 
 document.getElementById('setupCancelBtn').onclick = ()=>{ closeM('setupModal'); openM('menuModal'); };
-
-document.getElementById('saveBtn').onclick = ()=>{
-  if (!G) { showToast('Nema aktivne partije'); return; }
-  closeM('menuModal');
-  const def = G.teams.map(t=>t.name).join(' vs ').slice(0,28);
-  const origNo = document.getElementById('confirmNo').onclick;
-  openConfirm({title:'Spremi partiju',msg:'Unesi naziv:',withInput:true,inputDef:def,
-    onOk:name=>{
-      document.getElementById('confirmNo').onclick = origNo;
-      if(!name){ showToast('Naziv ne može biti prazan'); openM('menuModal'); return; }
-      saveAs(name);
-      openM('menuModal');
-    }});
-  document.getElementById('confirmNo').onclick = ()=>{
-    closeM('confirmModal'); _confirmOk=null;
-    document.getElementById('confirmNo').onclick = origNo;
-    openM('menuModal');
-  };
-};
 
 document.getElementById('loadBtn').onclick = ()=>{
   if (!getSaves().filter(s=>!s.state.finished).length) { showToast('Nema pauziranih partija'); return; }
