@@ -901,27 +901,6 @@ body {
   -webkit-overflow-scrolling: touch;
   box-shadow: var(--sh-lg);
 }
-/* Varijanta za modale s dugom listom: naslov (i eventualna dodatna polja) ostaju fiksni,
-   samo tijelo označeno .modal-scroll-body skrola, a donji gumb/gumbovi ostaju uvijek vidljivi */
-.modal.modal-flex {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-.modal.modal-flex > * {
-  flex-shrink: 0;
-}
-.modal.modal-flex > .m-btn {
-  margin-top: 12px;
-}
-.modal-scroll-body {
-  flex: 1 1 auto;
-  flex-shrink: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  min-height: 0;
-  margin-bottom: 12px;
-}
 .modal-title {
   font-family: 'Bebas Neue', sans-serif;
   font-size: 32px;
@@ -1403,7 +1382,7 @@ body {
 
 <!-- ====== SETUP MODAL ====== -->
 <div class="modal-overlay" id="setupModal">
-  <div class="modal modal-flex">
+  <div class="modal">
     <div class="modal-title">NOVA PAR<span class="accent">TIJA</span></div>
     <div class="modal-label">Broj igrača</div>
     <div class="seg" id="modeSegs">
@@ -1412,7 +1391,7 @@ body {
       <button class="seg-btn" data-m="4">4</button>
       <button class="seg-btn" data-m="pairs">2 Para</button>
     </div>
-    <div id="setupRest" class="modal-scroll-body">
+    <div id="setupRest">
       <div class="modal-label" id="namesLabel">Imena ekipa</div>
       <div id="setupNamesWarning" style="display:none; font-size:12px; color:var(--red); background:color-mix(in srgb, var(--red) 12%, transparent); border:1px solid color-mix(in srgb, var(--red) 30%, transparent); border-radius:10px; padding:8px 10px; margin-bottom:10px; line-height:1.4;"></div>
       <div id="setupNames"></div>
@@ -1434,7 +1413,7 @@ body {
       </div>
       <div style="font-size:11px; color:var(--faint); margin:-8px 2px 4px; line-height:1.4;">"Tko manje": tko prvi dosegne cilj bodova gubi partiju — pobjeđuje ekipa s manje bodova.</div>
     </div>
-    <div class="modal-btns" style="margin-top:0;">
+    <div class="modal-btns" style="margin-top:20px;">
       <button class="m-btn m-btn-ghost" id="setupCancelBtn">Odustani</button>
       <button class="m-btn m-btn-red" id="startBtn" style="display:none;">Započni partiju</button>
     </div>
@@ -1443,9 +1422,9 @@ body {
 
 <!-- ====== MENU MODAL ====== -->
 <div class="modal-overlay" id="menuModal">
-  <div class="modal modal-flex">
+  <div class="modal">
     <div class="modal-title">ME<span class="accent">NI</span></div>
-    <div class="modal-scroll-body">
+    <div>
       <div class="modal-btns single">
         <button class="m-btn m-btn-red" id="newGameBtn" style="margin-bottom:8px;">Nova partija</button>
         <button class="m-btn m-btn-ghost" id="playersBtn" style="margin-bottom:8px;">👤 Igrači (unos/izmjena)</button>
@@ -1462,9 +1441,8 @@ body {
         </div>
       </div>
       <div style="text-align:center; margin-top:14px; font-size:11px; color:var(--faint); letter-spacing:0.5px;">verzija <span id="appVersionLabel"></span></div>
-      <button class="m-btn m-btn-ghost" id="forceUpdateBtn" style="margin-top:10px; font-size:12px; padding:8px;">🔄 Prisilno provjeri ažuriranje</button>
     </div>
-    <button class="m-btn m-btn-ghost" style="width:100%;" id="menuCloseBtn">Zatvori</button>
+    <button class="m-btn m-btn-ghost" style="width:100%; margin-top:16px;" id="menuCloseBtn">Zatvori</button>
   </div>
 </div>
 
@@ -1486,40 +1464,40 @@ body {
 
 <!-- ====== LOAD MODAL ====== -->
 <div class="modal-overlay" id="loadModal">
-  <div class="modal modal-flex">
+  <div class="modal">
     <div class="modal-title">NASTA<span class="accent">VI</span></div>
-    <div id="savedList" class="modal-scroll-body"></div>
+    <div id="savedList" style="margin-bottom:12px;"></div>
     <button class="m-btn m-btn-ghost" style="width:100%;" id="loadClose">Zatvori</button>
   </div>
 </div>
 
 <!-- ====== POVIJEST PARTIJA MODAL ====== -->
 <div class="modal-overlay" id="matchHistModal">
-  <div class="modal modal-flex">
+  <div class="modal">
     <div class="modal-title">POVIJ<span class="accent">EST</span></div>
-    <div id="matchHistList" class="modal-scroll-body"></div>
+    <div id="matchHistList" style="margin-bottom:12px;"></div>
     <button class="m-btn m-btn-ghost" style="width:100%;" id="matchHistClose">Zatvori</button>
   </div>
 </div>
 
 <!-- ====== IGRAČI MODAL (unos/izmjena/brisanje) ====== -->
 <div class="modal-overlay" id="playersModal">
-  <div class="modal modal-flex">
+  <div class="modal">
     <div class="modal-title">IGRA<span class="accent">ČI</span></div>
     <div class="player-add-row">
       <input type="text" id="playerAddInput" placeholder="Novi igrač…" maxlength="20">
       <button class="m-btn m-btn-red" id="playerAddBtn" style="width:auto; padding:0 18px;">+ Dodaj</button>
     </div>
-    <div id="playersList" class="modal-scroll-body" style="margin-top:14px;"></div>
+    <div id="playersList" style="margin:14px 0 12px;"></div>
     <button class="m-btn m-btn-ghost" style="width:100%;" id="playersClose">Zatvori</button>
   </div>
 </div>
 
 <!-- ====== RULES MODAL ====== -->
 <div class="modal-overlay" id="rulesModal">
-  <div class="modal modal-flex">
+  <div class="modal">
     <div class="modal-title">PRAVI<span class="accent">LA</span></div>
-    <div class="modal-scroll-body">
+    <div>
       <div class="rule-row">
         <div class="rule-head">Bodovanje karata</div>
         <div class="rule-body">
@@ -1556,7 +1534,7 @@ body {
         </div>
       </div>
     </div>
-    <button class="m-btn m-btn-ghost" style="width:100%;" id="rulesClose">Zatvori</button>
+    <button class="m-btn m-btn-ghost" style="width:100%; margin-top:12px;" id="rulesClose">Zatvori</button>
   </div>
 </div>
 
@@ -1595,9 +1573,9 @@ body {
 
 <!-- ====== DETALJI ODIGRANE PARTIJE (kompletno kretanje rezultata) ====== -->
 <div class="modal-overlay" id="matchDetailModal" style="z-index:160;">
-  <div class="modal modal-flex">
+  <div class="modal">
     <div class="modal-title" id="matchDetailTitle">Detalji</div>
-    <div id="matchDetailBody" class="modal-scroll-body"></div>
+    <div id="matchDetailBody" style="margin-bottom:12px;"></div>
     <button class="m-btn m-btn-ghost" style="width:100%;" id="matchDetailClose">Zatvori</button>
   </div>
 </div>
@@ -1626,7 +1604,7 @@ const DEFAULT_TARGET = 41;
 const SAVE_KEY   = 'treseta_saves_v2';
 const AUTO_KEY   = 'treseta_auto_v2';
 const NAMES_KEY  = 'treseta_names_v1';
-const APP_VERSION = '1.26';
+const APP_VERSION = '1.27';
 
 // ===================== STATE =====================
 let G = null; // game state
@@ -2923,24 +2901,6 @@ initTheme();
 buildSetupNames();
 const vLbl = document.getElementById('appVersionLabel');
 if (vLbl) vLbl.textContent = APP_VERSION;
-
-// Prisilno provjeri ažuriranje: obriši sve SW registracije i cacheve, pa tvrdo ponovno učitaj
-document.getElementById('forceUpdateBtn').onclick = async () => {
-  showToast('Provjera ažuriranja…');
-  try {
-    if ('serviceWorker' in navigator) {
-      const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map(r => r.unregister()));
-    }
-    if (window.caches) {
-      const keys = await caches.keys();
-      await Promise.all(keys.map(k => caches.delete(k)));
-    }
-  } catch (e) {}
-  setTimeout(() => {
-    location.href = location.pathname + '?v=' + Date.now();
-  }, 300);
-};
 
 function bootApp() {
   const auto = loadAuto();
