@@ -93,6 +93,7 @@ html[data-theme="light"] {
 html { height: 100%; }
 
 body {
+  height: 100vh;
   height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -605,6 +606,7 @@ body {
 .sheet {
   position: fixed;
   bottom: 0; left: 0; right: 0;
+  max-height: 88vh;
   max-height: 88dvh;
   background: linear-gradient(180deg, color-mix(in srgb, var(--card) 85%, white 6%) 0%, var(--card) 100%);
   border-radius: 20px 20px 0 0;
@@ -893,6 +895,7 @@ body {
   padding: 24px 20px;
   width: 100%;
   max-width: 360px;
+  max-height: 88vh;
   max-height: 88dvh;
   overflow-y: auto;
   box-shadow: var(--sh-lg);
@@ -1217,10 +1220,13 @@ body {
   margin: 14px 2px 6px;
 }
 .match-detail-partija-label:first-child { margin-top: 2px; }
-.hist-winner-total {
-  font-family: inherit;
-  font-weight: 800;
-  color: var(--red);
+.hist-winner-total-big {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  letter-spacing: 1px;
+  color: var(--text);
+  line-height: 1.15;
+  margin-bottom: 2px;
 }
 .hist-participants {
   font-size: 12px;
@@ -1617,7 +1623,7 @@ const DEFAULT_TARGET = 41;
 const SAVE_KEY   = 'treseta_saves_v2';
 const AUTO_KEY   = 'treseta_auto_v2';
 const NAMES_KEY  = 'treseta_names_v1';
-const APP_VERSION = '1.24';
+const APP_VERSION = '1.25';
 
 // ===================== STATE =====================
 let G = null; // game state
@@ -2887,7 +2893,8 @@ function renderMatchHistoryList() {
     row.innerHTML = `
       <div class="saved-info">
         <div class="hist-participants">${participantsLine}</div>
-        <div class="saved-name">🏆 ${esc(winnerName)}  <span class="hist-winner-total">${totalStr}</span>${extraNote}</div>
+        <div class="hist-winner-total-big">${totalStr}</div>
+        <div class="saved-name">🏆 ${esc(winnerName)}${extraNote}</div>
         <div class="hist-date">${fmt(s.ts)}</div>
         ${divider}
         ${linesHtml}
