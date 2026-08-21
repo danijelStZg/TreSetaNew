@@ -897,22 +897,22 @@ body {
   overflow-y: auto;
   box-shadow: var(--sh-lg);
 }
-/* Varijanta za modale s dugom listom: naslov i "Zatvori" ostaju fiksni, samo lista skrola */
+/* Varijanta za modale s dugom listom: naslov (i eventualna dodatna polja) ostaju fiksni,
+   samo tijelo označeno .modal-scroll-body skrola, a donji gumb/gumbovi ostaju uvijek vidljivi */
 .modal.modal-flex {
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
-.modal.modal-flex > .modal-title,
-.modal.modal-flex > .player-add-row,
-.modal.modal-flex > .m-btn {
+.modal.modal-flex > * {
   flex-shrink: 0;
 }
 .modal.modal-flex > .m-btn {
   margin-top: 12px;
 }
 .modal-scroll-body {
-  flex: 1;
+  flex: 1 1 auto;
+  flex-shrink: 1;
   overflow-y: auto;
   min-height: 0;
   margin-bottom: 12px;
@@ -1207,6 +1207,21 @@ body {
   font-weight: 700;
   color: var(--text);
 }
+.match-detail-partija-label {
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--red);
+  margin: 14px 2px 6px;
+}
+.match-detail-partija-label:first-child { margin-top: 2px; }
+.hist-winner-total {
+  font-family: inherit;
+  font-weight: 800;
+  color: var(--red);
+}
 .hist-participants {
   font-size: 12px;
   font-weight: 600;
@@ -1380,7 +1395,7 @@ body {
 
 <!-- ====== SETUP MODAL ====== -->
 <div class="modal-overlay" id="setupModal">
-  <div class="modal">
+  <div class="modal modal-flex">
     <div class="modal-title">NOVA PAR<span class="accent">TIJA</span></div>
     <div class="modal-label">Broj igrača</div>
     <div class="seg" id="modeSegs">
@@ -1389,7 +1404,7 @@ body {
       <button class="seg-btn" data-m="4">4</button>
       <button class="seg-btn" data-m="pairs">2 Para</button>
     </div>
-    <div id="setupRest">
+    <div id="setupRest" class="modal-scroll-body">
       <div class="modal-label" id="namesLabel">Imena ekipa</div>
       <div id="setupNamesWarning" style="display:none; font-size:12px; color:var(--red); background:color-mix(in srgb, var(--red) 12%, transparent); border:1px solid color-mix(in srgb, var(--red) 30%, transparent); border-radius:10px; padding:8px 10px; margin-bottom:10px; line-height:1.4;"></div>
       <div id="setupNames"></div>
@@ -1411,7 +1426,7 @@ body {
       </div>
       <div style="font-size:11px; color:var(--faint); margin:-8px 2px 4px; line-height:1.4;">"Tko manje": tko prvi dosegne cilj bodova gubi partiju — pobjeđuje ekipa s manje bodova.</div>
     </div>
-    <div class="modal-btns" style="margin-top:20px;">
+    <div class="modal-btns" style="margin-top:0;">
       <button class="m-btn m-btn-ghost" id="setupCancelBtn">Odustani</button>
       <button class="m-btn m-btn-red" id="startBtn" style="display:none;">Započni partiju</button>
     </div>
@@ -1420,25 +1435,27 @@ body {
 
 <!-- ====== MENU MODAL ====== -->
 <div class="modal-overlay" id="menuModal">
-  <div class="modal">
+  <div class="modal modal-flex">
     <div class="modal-title">ME<span class="accent">NI</span></div>
-    <div class="modal-btns single">
-      <button class="m-btn m-btn-red" id="newGameBtn" style="margin-bottom:8px;">Nova partija</button>
-      <button class="m-btn m-btn-ghost" id="playersBtn" style="margin-bottom:8px;">👤 Igrači (unos/izmjena)</button>
-      <button class="m-btn m-btn-ghost" id="pauseBtn" style="margin-bottom:8px;">⏸ Pauziraj partiju</button>
-      <button class="m-btn m-btn-ghost" id="loadBtn" style="margin-bottom:8px;">▶ Nastavi pauziranu partiju</button>
-      <button class="m-btn m-btn-ghost" id="matchHistBtn" style="margin-bottom:8px;">Povijest odigranih partija</button>
-      <button class="m-btn m-btn-ghost" id="rulesBtn" style="margin-bottom:8px;">Pravila i akuže</button>
-      <div class="theme-toggle-wrap" style="margin-bottom:8px;">
-        <div class="theme-toggle-label">Tema</div>
-        <div class="seg theme-seg" id="themeSegs" style="margin-bottom:0;">
-          <button class="seg-btn" data-theme="light">☀️ Svijetla</button>
-          <button class="seg-btn" data-theme="dark">🌙 Tamna</button>
+    <div class="modal-scroll-body">
+      <div class="modal-btns single">
+        <button class="m-btn m-btn-red" id="newGameBtn" style="margin-bottom:8px;">Nova partija</button>
+        <button class="m-btn m-btn-ghost" id="playersBtn" style="margin-bottom:8px;">👤 Igrači (unos/izmjena)</button>
+        <button class="m-btn m-btn-ghost" id="pauseBtn" style="margin-bottom:8px;">⏸ Pauziraj partiju</button>
+        <button class="m-btn m-btn-ghost" id="loadBtn" style="margin-bottom:8px;">▶ Nastavi pauziranu partiju</button>
+        <button class="m-btn m-btn-ghost" id="matchHistBtn" style="margin-bottom:8px;">Povijest odigranih partija</button>
+        <button class="m-btn m-btn-ghost" id="rulesBtn" style="margin-bottom:8px;">Pravila i akuže</button>
+        <div class="theme-toggle-wrap" style="margin-bottom:8px;">
+          <div class="theme-toggle-label">Tema</div>
+          <div class="seg theme-seg" id="themeSegs" style="margin-bottom:0;">
+            <button class="seg-btn" data-theme="light">☀️ Svijetla</button>
+            <button class="seg-btn" data-theme="dark">🌙 Tamna</button>
+          </div>
         </div>
       </div>
-      <button class="m-btn m-btn-ghost" id="menuCloseBtn">Zatvori</button>
+      <div style="text-align:center; margin-top:14px; font-size:11px; color:var(--faint); letter-spacing:0.5px;">verzija <span id="appVersionLabel"></span></div>
     </div>
-    <div style="text-align:center; margin-top:14px; font-size:11px; color:var(--faint); letter-spacing:0.5px;">verzija <span id="appVersionLabel"></span></div>
+    <button class="m-btn m-btn-ghost" style="width:100%;" id="menuCloseBtn">Zatvori</button>
   </div>
 </div>
 
@@ -1491,46 +1508,46 @@ body {
 
 <!-- ====== RULES MODAL ====== -->
 <div class="modal-overlay" id="rulesModal">
-  <div class="modal">
+  <div class="modal modal-flex">
     <div class="modal-title">PRAVI<span class="accent">LA</span></div>
-    <div class="rule-row">
-      <div class="rule-head">Bodovanje karata</div>
-      <div class="rule-body">
-        <strong>As</strong> = 1 bod<br>
-        <strong>2, 3, Kralj, Konj, Fant</strong> = 1/3 boda<br>
-        <strong>4, 5, 6, 7</strong> = 0 bodova<br>
-        Zadnji štih = +1 bod<br>
-        <strong>Ukupno: 11 punata po rundi</strong>
+    <div class="modal-scroll-body">
+      <div class="rule-row">
+        <div class="rule-head">Bodovanje karata</div>
+        <div class="rule-body">
+          <strong>As</strong> = 1 bod<br>
+          <strong>2, 3, Kralj, Konj, Fant</strong> = 1/3 boda<br>
+          <strong>4, 5, 6, 7</strong> = 0 bodova<br>
+          Zadnji štih = +1 bod<br>
+          <strong>Ukupno: 11 punata po rundi</strong>
+        </div>
+      </div>
+      <div class="rule-row">
+        <div class="rule-head">Napola <span style="color:var(--red); font-size:12px;">+3 boda</span></div>
+        <div class="rule-body">3 ase, 3 dvojke ili 3 trojke iste boje (kod parova) ili u istoj ruci (kod 2, 3 ili 4 igrača).</div>
+      </div>
+      <div class="rule-row">
+        <div class="rule-head">Tri trojke, dvojke ili asa <span style="color:var(--red); font-size:12px;">+3 boda</span></div>
+        <div class="rule-body">3 iste karte različitih boja u istoj ruci.</div>
+      </div>
+      <div class="rule-row">
+        <div class="rule-head">Četiri trojke, dvojke ili asa <span style="color:var(--red); font-size:12px;">+4 boda</span></div>
+        <div class="rule-body">Sve 4 karte istog ranga (As, 2 ili 3) u istoj ruci.</div>
+      </div>
+      <div class="rule-row">
+        <div class="rule-head">Kraj partije</div>
+        <div class="rule-body">Pobjeđuje ekipa koja prva dostigne <strong>41 bod</strong>. Ako prijeđu obje u istoj rundi, pobjeđuje ona s više bodova.</div>
+      </div>
+      <div class="rule-row">
+        <div class="rule-head">🔻 Način "Tko manje"</div>
+        <div class="rule-body">
+          Sve je obrnuto: tko prvi dosegne cilj bodova (npr. 41), taj <strong>gubi</strong> tu partiju — pobjeđuje ekipa s <strong>manje</strong> bodova.<br><br>
+          <strong>Akuže idu u minus</strong> — svaka prijavljena akuža oduzima bodove umjesto da ih dodaje.<br><br>
+          <strong>Kapot</strong> (osvojenih svih 11 punata u rundi) bilježi se kao <strong>−11</strong> umjesto +11 — u ovom modu je to <strong>odličan rezultat</strong>, jer ti smanjuje bodove za 11, a cilj je imati što manje bodova.<br><br>
+          Kod meča na više partija, pobjednik meča je i dalje onaj tko prvi skupi traženi broj pobjeđenih partija — samo je definicija "pobjede partije" obrnuta.
+        </div>
       </div>
     </div>
-    <div class="rule-row">
-      <div class="rule-head">Napola <span style="color:var(--red); font-size:12px;">+3 boda</span></div>
-      <div class="rule-body">3 ase, 3 dvojke ili 3 trojke iste boje (kod parova) ili u istoj ruci (kod 2, 3 ili 4 igrača).</div>
-    </div>
-    <div class="rule-row">
-      <div class="rule-head">Tri trojke, dvojke ili asa <span style="color:var(--red); font-size:12px;">+3 boda</span></div>
-      <div class="rule-body">3 iste karte različitih boja u istoj ruci.</div>
-    </div>
-    <div class="rule-row">
-      <div class="rule-head">Četiri trojke, dvojke ili asa <span style="color:var(--red); font-size:12px;">+4 boda</span></div>
-      <div class="rule-body">Sve 4 karte istog ranga (As, 2 ili 3) u istoj ruci.</div>
-    </div>
-    <div class="rule-row">
-      <div class="rule-head">Kraj partije</div>
-      <div class="rule-body">Pobjeđuje ekipa koja prva dostigne <strong>41 bod</strong>. Ako prijeđu obje u istoj rundi, pobjeđuje ona s više bodova.</div>
-    </div>
-    <div class="rule-row">
-      <div class="rule-head">🔻 Način "Tko manje"</div>
-      <div class="rule-body">
-        Sve je obrnuto: tko prvi dosegne cilj bodova (npr. 41), taj <strong>gubi</strong> tu partiju — pobjeđuje ekipa s <strong>manje</strong> bodova.<br><br>
-        <strong>Akuže idu u minus</strong> — svaka prijavljena akuža oduzima bodove umjesto da ih dodaje.<br><br>
-        <strong>Kapot</strong> (osvojenih svih 11 punata u rundi) bilježi se kao <strong>−11</strong> umjesto +11 — u ovom modu je to <strong>odličan rezultat</strong>, jer ti smanjuje bodove za 11, a cilj je imati što manje bodova.<br><br>
-        Kod meča na više partija, pobjednik meča je i dalje onaj tko prvi skupi traženi broj pobjeđenih partija — samo je definicija "pobjede partije" obrnuta.
-      </div>
-    </div>
-    <div class="modal-btns single" style="margin-top:12px;">
-      <button class="m-btn m-btn-ghost" id="rulesClose">Zatvori</button>
-    </div>
+    <button class="m-btn m-btn-ghost" style="width:100%;" id="rulesClose">Zatvori</button>
   </div>
 </div>
 
@@ -1567,6 +1584,15 @@ body {
   </div>
 </div>
 
+<!-- ====== DETALJI ODIGRANE PARTIJE (kompletno kretanje rezultata) ====== -->
+<div class="modal-overlay" id="matchDetailModal" style="z-index:160;">
+  <div class="modal modal-flex">
+    <div class="modal-title" id="matchDetailTitle">Detalji</div>
+    <div id="matchDetailBody" class="modal-scroll-body"></div>
+    <button class="m-btn m-btn-ghost" style="width:100%;" id="matchDetailClose">Zatvori</button>
+  </div>
+</div>
+
 <!-- ====== AKUŽA POPUP (klik na oznaku iznad punata) ====== -->
 <div class="modal-overlay" id="akuzaModal" style="z-index:150;">
   <div class="modal">
@@ -1591,7 +1617,7 @@ const DEFAULT_TARGET = 41;
 const SAVE_KEY   = 'treseta_saves_v2';
 const AUTO_KEY   = 'treseta_auto_v2';
 const NAMES_KEY  = 'treseta_names_v1';
-const APP_VERSION = '1.22';
+const APP_VERSION = '1.23';
 
 // ===================== STATE =====================
 let G = null; // game state
@@ -2025,6 +2051,40 @@ function renderAkuzaModalItems() {
 document.getElementById('akuzaModalClose').onclick = () => closeM('akuzaModal');
 
 // ===================== HISTORY SHEET =====================
+// Generira HTML redaka povijesti (dijeli ga i uživo prikaz i read-only prikaz gotovih partija)
+function buildHistoryRowsHTML(teams, rounds, lowWins, readOnly) {
+  let out = '';
+  rounds.forEach((r, idx) => {
+    let lines = '';
+    teams.forEach((t, i) => {
+      const p = r.punti[i]||0;
+      const a = r.akuzPts[i]||0;
+      const delta = Array.isArray(r.scoreDelta) ? r.scoreDelta[i] : p+a;
+      const akNote = descAk(r.akuzi[i]||{});
+      let detail = '';
+      if (lowWins) {
+        const scoredP = (p === 11) ? -11 : p;
+        if (a || scoredP !== p) {
+          detail = ` <small style="color:var(--gold);font-weight:600;">(${scoredP}${a?` − ${a}`:''})</small>`;
+        }
+      } else if (a) {
+        detail = ` <small style="color:var(--gold);font-weight:600;">(${p}+${a})</small>`;
+      }
+      lines += `<div class="hist-line">
+        <span class="hist-name">${esc(t.name)}</span>
+        <span class="hist-pts"${delta<0?' style="color:var(--red);"':''}>${delta}${detail}</span>
+      </div>`;
+      if (akNote) lines += `<div class="hist-akuzi">${esc(t.name)}: ${akNote}${lowWins?' (u minus)':''}</div>`;
+    });
+    out += `<div class="hist-row" data-idx="${idx}">
+      <div class="hist-num">${idx+1}</div>
+      <div class="hist-content">${lines}</div>
+      ${readOnly ? '<div></div>' : '<button class="hist-del" title="Obriši">✕</button>'}
+    </div>`;
+  });
+  return out;
+}
+
 function openHistory() {
   renderHistory();
   openSheet('histSheet','histOverlay');
@@ -2037,37 +2097,10 @@ function renderHistory() {
     body.innerHTML = '<div class="empty-hist">Nema odigranih rundi</div>';
     return;
   }
-  G.rounds.forEach((r, idx) => {
-    const row = document.createElement('div');
-    row.className = 'hist-row';
-    let lines = '';
-    G.teams.forEach((t, i) => {
-      const p = r.punti[i]||0;
-      const a = r.akuzPts[i]||0;
-      const delta = Array.isArray(r.scoreDelta) ? r.scoreDelta[i] : p+a;
-      const akNote = descAk(r.akuzi[i]||{});
-      let detail = '';
-      if (G.lowWins) {
-        const scoredP = (p === 11) ? -11 : p;
-        if (a || scoredP !== p) {
-          detail = ` <small style="color:var(--gold);font-weight:600;">(${scoredP}${a?` − ${a}`:''})</small>`;
-        }
-      } else if (a) {
-        detail = ` <small style="color:var(--gold);font-weight:600;">(${p}+${a})</small>`;
-      }
-      lines += `<div class="hist-line">
-        <span class="hist-name">${esc(t.name)}</span>
-        <span class="hist-pts"${delta<0?' style="color:var(--red);"':''}>${delta}${detail}</span>
-      </div>`;
-      if (akNote) lines += `<div class="hist-akuzi">${esc(t.name)}: ${akNote}${G.lowWins?' (u minus)':''}</div>`;
-    });
-    row.innerHTML = `
-      <div class="hist-num">${idx+1}</div>
-      <div class="hist-content">${lines}</div>
-      <button class="hist-del" title="Obriši">✕</button>
-    `;
-    row.querySelector('.hist-del').onclick = () => deleteRound(idx);
-    body.appendChild(row);
+  body.innerHTML = buildHistoryRowsHTML(G.teams, G.rounds, G.lowWins, false);
+  body.querySelectorAll('.hist-row[data-idx] .hist-del').forEach(btn => {
+    const idx = parseInt(btn.closest('.hist-row').dataset.idx);
+    btn.onclick = () => deleteRound(idx);
   });
   // Total row
   const tot = document.createElement('div');
@@ -2187,6 +2220,7 @@ function handleGameEnd() {
   G.matchHistory.push({
     teams: G.teams.map(t=>({name:t.name, score:t.score})),
     winnerIdx: w.id,
+    rounds: JSON.parse(JSON.stringify(G.rounds)), // puna povijest rundi ove partije (za kasniji uvid)
   });
   if (G.matchWins[w.id] >= winsNeeded()) {
     showWinner();
@@ -2738,6 +2772,46 @@ function renderSavedList() {
 }
 
 // Povijest odigranih (završenih) partija - samo pregled/brisanje, bez učitavanja u tijeku igre
+// Gradi kompletan pregled kretanja rezultata (sve runde, kroz sve partije meča) za završenu partiju
+function buildFullMatchDetailHTML(teams, matchHistory, lowWins) {
+  let out = '';
+  matchHistory.forEach((g, gi) => {
+    if (matchHistory.length > 1) {
+      out += `<div class="match-detail-partija-label">Partija ${gi+1}</div>`;
+    }
+    const rounds = g.rounds || [];
+    if (!rounds.length) {
+      out += '<div class="empty-hist">Detalji rundi nisu dostupni za ovu partiju</div>';
+    } else {
+      out += buildHistoryRowsHTML(teams, rounds, lowWins, true);
+      let tLines = '';
+      teams.forEach(t => {
+        const finalTeam = g.teams[t.id] || {score:0};
+        const isWinner = t.id === g.winnerIdx;
+        tLines += `<div class="hist-line">
+          <span class="hist-name">${esc(t.name)}</span>
+          <span class="hist-pts" style="${isWinner?'color:var(--green);font-weight:800;':'color:var(--red);'}">${finalTeam.score}</span>
+        </div>`;
+      });
+      out += `<div class="hist-row hist-total"><div class="hist-num">Σ</div><div class="hist-content">${tLines}</div><div></div></div>`;
+    }
+  });
+  return out;
+}
+
+function openMatchDetail(s) {
+  document.getElementById('matchDetailTitle').textContent = s.name;
+  const body = document.getElementById('matchDetailBody');
+  const mh = s.state.matchHistory || [];
+  if (!mh.length || !mh.some(g=>g.rounds && g.rounds.length)) {
+    body.innerHTML = '<div class="empty-hist">Detaljna povijest rundi nije dostupna za ovu partiju (spremljena je prije uvođenja ove opcije).</div>';
+  } else {
+    body.innerHTML = buildFullMatchDetailHTML(s.state.teams, mh, s.state.lowWins);
+  }
+  openM('matchDetailModal');
+}
+document.getElementById('matchDetailClose').onclick = ()=> closeM('matchDetailModal');
+
 function renderMatchHistoryList() {
   const wrap = document.getElementById('matchHistList');
   const saves = getSaves().filter(s=>s.state.finished);
@@ -2756,7 +2830,7 @@ function renderMatchHistoryList() {
     const wn = s.state.winsNeeded || 1;
     const teams = s.state.teams;
     const mh = s.state.matchHistory || [];
-    let winnerName, participantsLine, linesHtml = '', summaryLine, divider = '';
+    let winnerName, participantsLine, linesHtml = '', totalStr, divider = '', extraNote = '';
 
     if (mh.length) {
       let winnerTeam;
@@ -2780,36 +2854,41 @@ function renderMatchHistoryList() {
         const totalValues = (wn > 1 && s.state.matchWins)
           ? orderedTeams.map(t=> s.state.matchWins[t.id]||0)
           : orderedTeams.map(t=> (mh[mh.length-1].teams[t.id]||{}).score||0);
-        summaryLine = `Ukupno — ${fmtScoreRow(totalValues, 0)}`; // orderedTeams[0] je uvijek pobjednik
+        totalStr = fmtScoreRow(totalValues, 0); // orderedTeams[0] je uvijek pobjednik
       } else {
         const values = orderedTeams.map(t=> (mh[0].teams[t.id]||{}).score||0);
         const winIdx = orderedTeams.findIndex(t=>t.id===mh[0].winnerIdx);
-        summaryLine = `Rezultat — ${fmtScoreRow(values, winIdx)}`;
+        totalStr = fmtScoreRow(values, winIdx);
       }
     } else {
       // Fallback za starije spremljene partije bez matchHistory podataka
       const sorted = [...teams].sort((a,b)=>b.score-a.score);
       winnerName = sorted[0].name;
       participantsLine = sorted.map(t=>esc(t.name)).join(' / ');
-      summaryLine = `Rezultat — ${fmtScoreRow(sorted.map(t=>t.score), 0)}  ·  ${s.state.rounds.length} rundi`;
+      totalStr = fmtScoreRow(sorted.map(t=>t.score), 0);
+      extraNote = `  ·  ${s.state.rounds.length} rundi`;
     }
 
     row.innerHTML = `
       <div class="saved-info">
         <div class="hist-participants">${participantsLine}</div>
-        <div class="saved-name">🏆 ${esc(winnerName)}</div>
+        <div class="saved-name">🏆 ${esc(winnerName)}  <span class="hist-winner-total">${totalStr}</span>${extraNote}</div>
         <div class="hist-date">${fmt(s.ts)}</div>
         ${divider}
         ${linesHtml}
-        ${divider}
-        <div class="hist-match-line hist-total-line">${summaryLine}</div>
       </div>
     `;
+    const ib = document.createElement('button');
+    ib.className='sl-btn r small'; ib.textContent='ⓘ'; ib.title='Kompletno kretanje rezultata';
+    ib.onclick = () => openMatchDetail(s);
     const db = document.createElement('button');
-    db.className='sl-btn d'; db.textContent='✕'; db.title='Obriši';
+    db.className='sl-btn d small'; db.textContent='✕'; db.title='Obriši';
     db.onclick=()=>openConfirm({title:'Obrisati?',msg:`Obrisati povijest "${s.name}"?`,
       onOk:()=>{ setSaves(getSaves().filter(x=>x.name!==s.name)); renderMatchHistoryList(); }});
-    row.appendChild(db);
+    const actions = document.createElement('div');
+    actions.className = 'saved-actions';
+    actions.appendChild(ib); actions.appendChild(db);
+    row.appendChild(actions);
     wrap.appendChild(row);
   });
 }
