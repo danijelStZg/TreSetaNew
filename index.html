@@ -898,6 +898,7 @@ body {
   max-height: 88vh;
   max-height: 88dvh;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   box-shadow: var(--sh-lg);
 }
 /* Varijanta za modale s dugom listom: naslov (i eventualna dodatna polja) ostaju fiksni,
@@ -917,6 +918,7 @@ body {
   flex: 1 1 auto;
   flex-shrink: 1;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   min-height: 0;
   margin-bottom: 12px;
 }
@@ -1460,6 +1462,7 @@ body {
         </div>
       </div>
       <div style="text-align:center; margin-top:14px; font-size:11px; color:var(--faint); letter-spacing:0.5px;">verzija <span id="appVersionLabel"></span></div>
+      <button class="m-btn m-btn-ghost" id="forceUpdateBtn" style="margin-top:10px; font-size:12px; padding:8px;">🔄 Prisilno provjeri ažuriranje</button>
     </div>
     <button class="m-btn m-btn-ghost" style="width:100%;" id="menuCloseBtn">Zatvori</button>
   </div>
@@ -1623,7 +1626,7 @@ const DEFAULT_TARGET = 41;
 const SAVE_KEY   = 'treseta_saves_v2';
 const AUTO_KEY   = 'treseta_auto_v2';
 const NAMES_KEY  = 'treseta_names_v1';
-const APP_VERSION = '1.25';
+const APP_VERSION = '1.26';
 
 // ===================== STATE =====================
 let G = null; // game state
@@ -2921,6 +2924,24 @@ buildSetupNames();
 const vLbl = document.getElementById('appVersionLabel');
 if (vLbl) vLbl.textContent = APP_VERSION;
 
+// Prisilno provjeri ažuriranje: obriši sve SW registracije i cacheve, pa tvrdo ponovno učitaj
+document.getElementById('forceUpdateBtn').onclick = async () => {
+  showToast('Provjera ažuriranja…');
+  try {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+    if (window.caches) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+  } catch (e) {}
+  setTimeout(() => {
+    location.href = location.pathname + '?v=' + Date.now();
+  }, 300);
+};
+
 function bootApp() {
   const auto = loadAuto();
   const hasUnfinished = auto && auto.teams && auto.teams.length && !auto.teams.find(t=>t.score>=((auto.targetScore)||DEFAULT_TARGET));
@@ -2965,7 +2986,7 @@ function bootApp() {
 // ===================== PWA / SERVICE WORKER =====================
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').then(reg => {
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
       // Odmah provjeri ima li novija verzija
       reg.update();
       // I dalje provjeravaj svakih 30 min dok je tab otvoren

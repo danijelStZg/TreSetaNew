@@ -6,7 +6,7 @@
 // Kad objaviš novu verziju aplikacije, povisi broj u CACHE_VERSION
 // (npr. v2 -> v3). To prisili brisanje starog cachea.
 
-const CACHE_VERSION = 'treseta-v31';
+const CACHE_VERSION = 'treseta-v32';
 
 // Datoteke koje se predmemoriraju pri instalaciji (za offline rad)
 const PRECACHE_URLS = [
@@ -60,7 +60,7 @@ self.addEventListener('fetch', event => {
   if (url.origin !== self.location.origin) return;
 
   event.respondWith(
-    fetch(req)
+    fetch(req, { cache: 'no-store' })
       .then(networkResp => {
         // Uspjeh na mreži -> osvježi cache i vrati svježu verziju
         if (networkResp && networkResp.status === 200) {
