@@ -428,6 +428,16 @@ body {
   color: var(--gold);
   background: color-mix(in srgb, var(--gold) 12%, transparent);
 }
+.keypad-btn.disabled,
+.keypad-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  border-color: var(--border-soft);
+  color: var(--faint);
+  background: transparent;
+}
+.keypad-btn.disabled:active,
+.keypad-btn:disabled:active { transform: none; }
 .punti-row.t3 .pf-input { font-size: 36px; }
 .punti-row.t4 .pf-input { font-size: 40px; }
 .pf-input::-webkit-inner-spin-button,
@@ -1665,7 +1675,7 @@ const DEFAULT_TARGET = 41;
 const SAVE_KEY   = 'treseta_saves_v2';
 const AUTO_KEY   = 'treseta_auto_v2';
 const NAMES_KEY  = 'treseta_names_v1';
-const APP_VERSION = '1.29';
+const APP_VERSION = '1.30';
 
 // ===================== STATE =====================
 let G = null; // game state
@@ -1998,12 +2008,25 @@ function openPuntiKeypad(i) {
 function renderPuntiKeypad() {
   const grid = document.getElementById('puntiKeypadGrid');
   grid.innerHTML = '';
+  const n = tc();
+  const i = puntiKeypadTeam;
+  // Zbroj već unesenih bodova SVIH OSTALIH igrača - određuje najveći dopušteni broj za ovog igrača
+  let sumOthers = 0;
+  for (let k = 0; k < n; k++) {
+    if (k === i) continue;
+    const v = parseInt(draft.punti[k]);
+    if (!isNaN(v)) sumOthers += v;
+  }
+  const maxAllowed = Math.max(0, 11 - sumOthers);
   for (let v = 0; v <= 11; v++) {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'keypad-btn' + (v === 11 ? ' kapot' : '');
+    const disabled = v > maxAllowed;
+    btn.className = 'keypad-btn' + (v === 11 ? ' kapot' : '') + (disabled ? ' disabled' : '');
     btn.textContent = v === 11 ? '11 ★' : String(v);
+    btn.disabled = disabled;
     btn.onclick = () => {
+      if (disabled) return;
       draft.punti[puntiKeypadTeam] = String(v);
       closeM('puntiKeypadModal');
       autoFillLast(puntiKeypadTeam);
@@ -2026,8 +2049,9 @@ function updatePuntiAkuzaBadge(i) {
   badge.classList.toggle('has', total > 0);
 }
 
-// Automatski izračunaj ZADNJE polje kao 11 - zbroj svih ostalih (čim su svi prethodni upisani).
-// Kod 2 igrača ostaje simetrično (bilo koje polje pokreće izračun onog drugog).
+// Automatski izračunaj PREOSTALO polje kao 11 - zbroj svih ostalih, čim je točno JEDNO polje prazno
+// (radi za bilo koju kombinaciju popunjenih polja, ne samo redom 1,2,3...).
+// Kod 2 igrača ostaje simetrično: unos u bilo koje polje uvijek prepisuje ono drugo.
 function autoFillLast(changedIdx) {
   const n = tc();
   if (n < 2) return;
@@ -2040,17 +2064,19 @@ function autoFillLast(changedIdx) {
     return;
   }
 
-  const lastIdx = n - 1;
-  if (changedIdx === lastIdx) return; // ručni unos zadnjeg polja se ne prepisuje
+  const emptyIdxs = [];
   let sum = 0;
-  for (let k = 0; k < lastIdx; k++) {
+  for (let k = 0; k < n; k++) {
     const v = parseInt(draft.punti[k]);
-    if (isNaN(v)) return; // još nisu sva prethodna polja upisana
+    if (isNaN(v)) { emptyIdxs.push(k); continue; }
     sum += v;
   }
-  const remaining = 11 - sum;
-  if (remaining < 0 || remaining > 11) return;
-  draft.punti[lastIdx] = String(remaining);
+  if (emptyIdxs.length === 1) {
+    const remaining = 11 - sum;
+    if (remaining >= 0 && remaining <= 11) {
+      draft.punti[emptyIdxs[0]] = String(remaining);
+    }
+  }
 }
 
 function renderSumHint() {
