@@ -1675,7 +1675,7 @@ const DEFAULT_TARGET = 41;
 const SAVE_KEY   = 'treseta_saves_v2';
 const AUTO_KEY   = 'treseta_auto_v2';
 const NAMES_KEY  = 'treseta_names_v1';
-const APP_VERSION = '1.30';
+const APP_VERSION = '1.31';
 
 // ===================== STATE =====================
 let G = null; // game state
@@ -2005,19 +2005,35 @@ function openPuntiKeypad(i) {
   renderPuntiKeypad();
   openM('puntiKeypadModal');
 }
+
+// Jesu li SVA polja za punte ove runde već popunjena (potpun set)?
+function isPuntiSetComplete() {
+  const n = tc();
+  for (let k = 0; k < n; k++) {
+    if (draft.punti[k] === '' || draft.punti[k] == null) return false;
+  }
+  return true;
+}
+
 function renderPuntiKeypad() {
   const grid = document.getElementById('puntiKeypadGrid');
   grid.innerHTML = '';
   const n = tc();
   const i = puntiKeypadTeam;
-  // Zbroj već unesenih bodova SVIH OSTALIH igrača - određuje najveći dopušteni broj za ovog igrača
-  let sumOthers = 0;
-  for (let k = 0; k < n; k++) {
-    if (k === i) continue;
-    const v = parseInt(draft.punti[k]);
-    if (!isNaN(v)) sumOthers += v;
+  const setComplete = isPuntiSetComplete();
+  let maxAllowed = 11;
+  // Ograniči izbor SAMO dok se set prvi put popunjava (n>2, još ima praznih polja).
+  // Kod 2 igrača, ili kad se ispravlja VEĆ potpuno popunjen set, uvijek nudi puni raspon
+  // (jer izmjena povlači ponovni izračun/reset ostalih polja).
+  if (n > 2 && !setComplete) {
+    let sumOthers = 0;
+    for (let k = 0; k < n; k++) {
+      if (k === i) continue;
+      const v = parseInt(draft.punti[k]);
+      if (!isNaN(v)) sumOthers += v;
+    }
+    maxAllowed = Math.max(0, 11 - sumOthers);
   }
-  const maxAllowed = Math.max(0, 11 - sumOthers);
   for (let v = 0; v <= 11; v++) {
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -2027,14 +2043,35 @@ function renderPuntiKeypad() {
     btn.disabled = disabled;
     btn.onclick = () => {
       if (disabled) return;
-      draft.punti[puntiKeypadTeam] = String(v);
-      closeM('puntiKeypadModal');
-      autoFillLast(puntiKeypadTeam);
-      renderPunti();
-      renderSumHint();
+      selectPuntiValue(i, v);
     };
     grid.appendChild(btn);
   }
+}
+
+// Primijeni odabranu vrijednost. Ako je set (3+ igrača) već bio potpuno popunjen
+// i korisnik bira DRUGI broj (ispravlja pogrešku), briše bodove SVIH OSTALIH polja
+// da ih korisnik ponovno unese (uz ograničenu/zasivljenu tipkovnicu kao inače),
+// a zadnje preostalo polje se opet automatski izračuna.
+function selectPuntiValue(i, v) {
+  const n = tc();
+  const wasComplete = isPuntiSetComplete();
+  const oldVal = draft.punti[i];
+  const newVal = String(v);
+
+  if (n > 2 && wasComplete && oldVal !== newVal) {
+    for (let k = 0; k < n; k++) {
+      if (k !== i) draft.punti[k] = '';
+    }
+    draft.punti[i] = newVal;
+  } else {
+    draft.punti[i] = newVal;
+    autoFillLast(i);
+  }
+
+  closeM('puntiKeypadModal');
+  renderPunti();
+  renderSumHint();
 }
 document.getElementById('puntiKeypadModal').addEventListener('click', e => {
   if (e.target.id === 'puntiKeypadModal') closeM('puntiKeypadModal');
