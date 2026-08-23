@@ -341,7 +341,7 @@ body {
   border: 1.5px solid var(--border);
   border-radius: var(--radius);
   padding: 12px 14px 38px;
-  cursor: text;
+  cursor: pointer;
   box-shadow: var(--sh);
   transition: border-color 0.15s, box-shadow 0.2s;
 }
@@ -389,6 +389,8 @@ body {
   width: 100%;
   border: none;
   background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
   font-family: 'Bebas Neue', sans-serif;
   font-size: 48px;
   line-height: 1;
@@ -397,6 +399,34 @@ body {
   letter-spacing: 1px;
   -moz-appearance: textfield;
   padding: 0;
+  text-align: left;
+  cursor: pointer;
+  display: block;
+}
+.pf-input.empty { color: var(--faint); }
+.keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 4px;
+}
+.keypad-btn {
+  height: 56px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-soft);
+  color: var(--text);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.15s, border-color 0.15s;
+}
+.keypad-btn:active { transform: scale(0.92); background: var(--card); }
+.keypad-btn.kapot {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
 }
 .punti-row.t3 .pf-input { font-size: 36px; }
 .punti-row.t4 .pf-input { font-size: 40px; }
@@ -1603,6 +1633,14 @@ body {
   </div>
 </div>
 
+<!-- ====== TIPKOVNICA ZA PUNTE (0-11) ====== -->
+<div class="modal-overlay" id="puntiKeypadModal" style="z-index:150;">
+  <div class="modal" style="max-width:320px;">
+    <div class="modal-title" id="puntiKeypadTitle">Punte</div>
+    <div class="keypad-grid" id="puntiKeypadGrid"></div>
+  </div>
+</div>
+
 <!-- ====== AKUŽA POPUP (klik na oznaku iznad punata) ====== -->
 <div class="modal-overlay" id="akuzaModal" style="z-index:150;">
   <div class="modal">
@@ -1627,7 +1665,7 @@ const DEFAULT_TARGET = 41;
 const SAVE_KEY   = 'treseta_saves_v2';
 const AUTO_KEY   = 'treseta_auto_v2';
 const NAMES_KEY  = 'treseta_names_v1';
-const APP_VERSION = '1.28';
+const APP_VERSION = '1.29';
 
 // ===================== STATE =====================
 let G = null; // game state
@@ -1933,28 +1971,51 @@ function renderPunti() {
   G.teams.forEach((t, i) => {
     const total = akuzeTotalForTeam(i);
     const sign = G.lowWins ? '−' : '+';
+    const isEmpty = draft.punti[i] === '';
     const f = document.createElement('div');
     f.className = 'punti-field';
     f.innerHTML = `
       <div class="pf-label">${esc(t.name)}</div>
       <button type="button" class="pf-akuza-badge${total?' has':''}" id="pf-akuza-${i}">${total ? sign+total : '⊕ akuže'}</button>
-      <input class="pf-input" id="pi-${i}" type="number" inputmode="numeric"
-        placeholder="0" min="0" max="11" value="${draft.punti[i]}">
+      <button type="button" class="pf-input${isEmpty?' empty':''}" id="pi-${i}">${isEmpty ? '0' : draft.punti[i]}</button>
     `;
     row.appendChild(f);
   });
   G.teams.forEach((_, i) => {
-    document.getElementById(`pi-${i}`).addEventListener('input', e => {
-      let v = e.target.value.replace(/[^0-9]/g,'');
-      if (parseInt(v) > 11) v = '11';
-      e.target.value = v;
-      draft.punti[i] = v;
-      autoFillLast(i);
-      renderSumHint();
-    });
+    document.getElementById(`pi-${i}`).addEventListener('click', () => openPuntiKeypad(i));
     document.getElementById(`pf-akuza-${i}`).addEventListener('click', () => openAkuzaModal(i));
   });
 }
+
+// ===================== TIPKOVNICA ZA PUNTE (0-11) =====================
+let puntiKeypadTeam = 0;
+function openPuntiKeypad(i) {
+  puntiKeypadTeam = i;
+  document.getElementById('puntiKeypadTitle').textContent = `Punte — ${G.teams[i].name}`;
+  renderPuntiKeypad();
+  openM('puntiKeypadModal');
+}
+function renderPuntiKeypad() {
+  const grid = document.getElementById('puntiKeypadGrid');
+  grid.innerHTML = '';
+  for (let v = 0; v <= 11; v++) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'keypad-btn' + (v === 11 ? ' kapot' : '');
+    btn.textContent = v === 11 ? '11 ★' : String(v);
+    btn.onclick = () => {
+      draft.punti[puntiKeypadTeam] = String(v);
+      closeM('puntiKeypadModal');
+      autoFillLast(puntiKeypadTeam);
+      renderPunti();
+      renderSumHint();
+    };
+    grid.appendChild(btn);
+  }
+}
+document.getElementById('puntiKeypadModal').addEventListener('click', e => {
+  if (e.target.id === 'puntiKeypadModal') closeM('puntiKeypadModal');
+});
 
 function updatePuntiAkuzaBadge(i) {
   const badge = document.getElementById(`pf-akuza-${i}`);
@@ -1976,8 +2037,6 @@ function autoFillLast(changedIdx) {
     if (isNaN(v) || v < 0 || v > 11) return;
     const other = 1 - changedIdx;
     draft.punti[other] = String(11 - v);
-    const inp = document.getElementById(`pi-${other}`);
-    if (inp) inp.value = draft.punti[other];
     return;
   }
 
@@ -1992,8 +2051,6 @@ function autoFillLast(changedIdx) {
   const remaining = 11 - sum;
   if (remaining < 0 || remaining > 11) return;
   draft.punti[lastIdx] = String(remaining);
-  const inp = document.getElementById(`pi-${lastIdx}`);
-  if (inp) inp.value = draft.punti[lastIdx];
 }
 
 function renderSumHint() {
