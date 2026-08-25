@@ -277,13 +277,32 @@ body {
   letter-spacing: 1px;
   font-weight: 600;
 }
-.sc-match {
+.sc-progress-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-bottom: 9px;
+}
+.sc-dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--border);
+  flex-shrink: 0;
+}
+.sc-dot.filled {
+  background: var(--green);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--green) 70%, transparent);
+}
+.sc-progress-ratio {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--gold);
-  margin-top: 4px;
-  letter-spacing: 0.5px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--green);
+  margin-left: 4px;
+  letter-spacing: 0.3px;
 }
 
 .progress {
@@ -1023,7 +1042,7 @@ body {
   padding: 8px 12px 6px;
 }
 .setup-num-field .pf-label { margin-bottom: 2px; }
-.setup-num-field input[type="number"] {
+.setup-num-btn {
   width: 100%;
   border: none;
   background: transparent;
@@ -1033,8 +1052,11 @@ body {
   font-size: 28px;
   font-weight: 400;
   letter-spacing: 1px;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  display: block;
 }
-.setup-num-field input[type="number"]:focus { box-shadow: none; }
 
 .pair-group {
   background: var(--bg-soft);
@@ -1462,11 +1484,11 @@ body {
       <div class="setup-num-row">
         <div class="setup-num-field">
           <div class="pf-label">Bodova</div>
-          <input type="number" id="targetInput" value="41" min="11" max="99" inputmode="numeric">
+          <button type="button" class="setup-num-btn" id="targetInput" data-value="41">41</button>
         </div>
         <div class="setup-num-field">
           <div class="pf-label">Partija</div>
-          <input type="number" id="winsInput" value="1" min="1" max="21" inputmode="numeric">
+          <button type="button" class="setup-num-btn" id="winsInput" data-value="1">1</button>
         </div>
       </div>
       <div class="modal-label">Način bodovanja</div>
@@ -1651,6 +1673,14 @@ body {
   </div>
 </div>
 
+<!-- ====== TIPKOVNICA ZA CILJ BODOVA / BROJ PARTIJA (postavka nove partije) ====== -->
+<div class="modal-overlay" id="numKeypadModal" style="z-index:150;">
+  <div class="modal" style="max-width:320px;">
+    <div class="modal-title" id="numKeypadTitle">Odaberi</div>
+    <div class="keypad-grid" id="numKeypadGrid"></div>
+  </div>
+</div>
+
 <!-- ====== AKUŽA POPUP (klik na oznaku iznad punata) ====== -->
 <div class="modal-overlay" id="akuzaModal" style="z-index:150;">
   <div class="modal">
@@ -1675,7 +1705,7 @@ const DEFAULT_TARGET = 41;
 const SAVE_KEY   = 'treseta_saves_v2';
 const AUTO_KEY   = 'treseta_auto_v2';
 const NAMES_KEY  = 'treseta_names_v1';
-const APP_VERSION = '1.31';
+const APP_VERSION = '1.33';
 
 // ===================== STATE =====================
 let G = null; // game state
@@ -1961,13 +1991,21 @@ function renderScoreboard() {
     const card = document.createElement('div');
     card.className = `score-card ${cls}`;
     const mw = (G.matchWins && G.matchWins[t.id]) || 0;
-    const matchLine = winsNeeded() > 1 ? `<div class="sc-match">🏅 ${mw}/${winsNeeded()}</div>` : '';
+    const wn = winsNeeded();
+    let progressRow = '';
+    if (wn > 1) {
+      let dots = '';
+      for (let d = 0; d < wn; d++) {
+        dots += `<span class="sc-dot${d < mw ? ' filled' : ''}"></span>`;
+      }
+      progressRow = `<div class="sc-progress-row">${dots}<span class="sc-progress-ratio">${mw}/${wn}</span></div>`;
+    }
     card.innerHTML = `
+      ${progressRow}
       <div class="sc-name">${esc(t.name)}</div>
       <div class="sc-score">${t.score}</div>
       <div class="sc-of">/ ${T}</div>
       <div class="progress"><div class="progress-fill" style="width:${pct}%"></div></div>
-      ${matchLine}
     `;
     sb.appendChild(card);
   });
@@ -2075,6 +2113,37 @@ function selectPuntiValue(i, v) {
 }
 document.getElementById('puntiKeypadModal').addEventListener('click', e => {
   if (e.target.id === 'puntiKeypadModal') closeM('puntiKeypadModal');
+});
+
+// ===================== TIPKOVNICA ZA CILJ BODOVA / BROJ PARTIJA =====================
+function openNumKeypad(btnId, title, options) {
+  const btn = document.getElementById(btnId);
+  const current = parseInt(btn.dataset.value) || 0;
+  document.getElementById('numKeypadTitle').textContent = title;
+  const grid = document.getElementById('numKeypadGrid');
+  grid.innerHTML = '';
+  options.forEach(v => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'keypad-btn' + (v === current ? ' kapot' : '');
+    b.textContent = String(v);
+    b.onclick = () => {
+      btn.dataset.value = String(v);
+      btn.textContent = String(v);
+      closeM('numKeypadModal');
+    };
+    grid.appendChild(b);
+  });
+  openM('numKeypadModal');
+}
+document.getElementById('targetInput').addEventListener('click', () => {
+  openNumKeypad('targetInput', 'Cilj bodova', [11, 21, 31, 41, 51, 61]);
+});
+document.getElementById('winsInput').addEventListener('click', () => {
+  openNumKeypad('winsInput', 'Broj partija', [1,2,3,4,5,6,7,8,9,10,11,12]);
+});
+document.getElementById('numKeypadModal').addEventListener('click', e => {
+  if (e.target.id === 'numKeypadModal') closeM('numKeypadModal');
 });
 
 function updatePuntiAkuzaBadge(i) {
@@ -2665,10 +2734,20 @@ function buildSetupNames(initial) {
   }
 
   if (initial && lastFinishedSetup) {
-    document.getElementById('targetInput').value = lastFinishedSetup.targetScore || DEFAULT_TARGET;
-    document.getElementById('winsInput').value = lastFinishedSetup.winsNeeded || 1;
+    const tVal = lastFinishedSetup.targetScore || DEFAULT_TARGET;
+    const wVal = lastFinishedSetup.winsNeeded || 1;
+    const tBtn = document.getElementById('targetInput');
+    const wBtn = document.getElementById('winsInput');
+    tBtn.dataset.value = String(tVal); tBtn.textContent = String(tVal);
+    wBtn.dataset.value = String(wVal); wBtn.textContent = String(wVal);
     document.querySelectorAll('#lowWinsSeg .seg-btn').forEach(b =>
       b.classList.toggle('active', (b.dataset.v === '1') === !!lastFinishedSetup.lowWins));
+  } else if (initial) {
+    // Svježa (neprethodno-popunjena) postavka - vrati na default vrijednosti
+    const tBtn = document.getElementById('targetInput');
+    const wBtn = document.getElementById('winsInput');
+    tBtn.dataset.value = String(DEFAULT_TARGET); tBtn.textContent = String(DEFAULT_TARGET);
+    wBtn.dataset.value = '1'; wBtn.textContent = '1';
   }
 }
 
@@ -2718,8 +2797,8 @@ document.getElementById('startBtn').onclick = ()=>{
   const activeWinBtn = document.getElementById('winsInput');
   const lowWinsBtn = document.querySelector('#lowWinsSeg .seg-btn.active');
   const opts = {
-    targetScore: parseInt(document.getElementById('targetInput').value) || DEFAULT_TARGET,
-    winsNeeded: Math.max(1, parseInt(activeWinBtn.value) || 1),
+    targetScore: parseInt(document.getElementById('targetInput').dataset.value) || DEFAULT_TARGET,
+    winsNeeded: Math.max(1, parseInt(activeWinBtn.dataset.value) || 1),
     lowWins: lowWinsBtn ? lowWinsBtn.dataset.v === '1' : false,
   };
   newGame(setupMode, names, opts);
