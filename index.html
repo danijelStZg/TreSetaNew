@@ -363,10 +363,11 @@ body {
   background: linear-gradient(180deg, color-mix(in srgb, var(--card) 85%, white 8%) 0%, var(--card) 100%);
   border: 1.5px solid var(--border);
   border-radius: var(--radius);
-  padding: 12px 14px 38px;
+  padding: 12px 14px 10px;
   cursor: pointer;
   box-shadow: var(--sh);
   transition: border-color 0.15s, box-shadow 0.2s;
+  overflow: visible;
 }
 .punti-field:focus-within {
   border-color: var(--red);
@@ -375,26 +376,37 @@ body {
 
 .pf-akuza-badge {
   position: absolute;
-  bottom: 8px; right: 8px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12.5px;
+  top: -13px; right: -13px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 15px;
   font-weight: 700;
-  letter-spacing: 0.3px;
-  color: var(--faint);
-  background: var(--bg-soft);
-  border: 1px solid var(--border-soft);
-  border-radius: 20px;
-  padding: 4px 11px;
+  letter-spacing: 0.2px;
+  color: #9aa4c0;
+  background: var(--card);
+  border: 2px solid #4d5678;
   cursor: pointer;
-  line-height: 1.3;
-  transition: transform 0.15s, background 0.15s, color 0.15s, border-color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+  transition: transform 0.15s, background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
+  z-index: 2;
 }
-.pf-akuza-badge:active { transform: scale(0.92); }
+.pf-akuza-badge:active { transform: scale(0.88); }
 .pf-akuza-badge.has {
-  color: var(--gold);
-  background: color-mix(in srgb, var(--gold) 14%, transparent);
-  border-color: color-mix(in srgb, var(--gold) 35%, transparent);
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--gold) 25%, transparent);
+  width: 38px;
+  height: 38px;
+  font-size: 16px;
+  color: #3a2308;
+  background: radial-gradient(circle at 32% 26%, #ffe9b8, #ffb92e 42%, #d9720f 85%);
+  border: 2px solid var(--card);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4), 0 0 14px rgba(255,185,46,0.65), inset 0 2px 3px rgba(255,255,255,0.5);
 }
 
 .pf-label {
@@ -1709,7 +1721,7 @@ const DEFAULT_TARGET = 41;
 const SAVE_KEY   = 'treseta_saves_v2';
 const AUTO_KEY   = 'treseta_auto_v2';
 const NAMES_KEY  = 'treseta_names_v1';
-const APP_VERSION = '1.34';
+const APP_VERSION = '1.36';
 
 // ===================== STATE =====================
 let G = null; // game state
@@ -2028,7 +2040,7 @@ function renderPunti() {
     f.className = 'punti-field';
     f.innerHTML = `
       <div class="pf-label">${esc(t.name)}</div>
-      <button type="button" class="pf-akuza-badge${total?' has':''}" id="pf-akuza-${i}">${total ? sign+total : '⊕ akuže'}</button>
+      <button type="button" class="pf-akuza-badge${total?' has':''}" id="pf-akuza-${i}">${total ? sign+total : '+'}</button>
       <button type="button" class="pf-input${isEmpty?' empty':''}" id="pi-${i}">${isEmpty ? '0' : draft.punti[i]}</button>
     `;
     row.appendChild(f);
@@ -2155,7 +2167,7 @@ function updatePuntiAkuzaBadge(i) {
   if (!badge) return;
   const total = akuzeTotalForTeam(i);
   const sign = G.lowWins ? '−' : '+';
-  badge.textContent = total ? `${sign}${total}` : '⊕ akuže';
+  badge.textContent = total ? `${sign}${total}` : '+';
   badge.classList.toggle('has', total > 0);
 }
 
