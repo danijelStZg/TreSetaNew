@@ -398,36 +398,44 @@ body {
 .pf-akuza-badge {
   position: absolute;
   bottom: 13px; right: 11px;
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   appearance: none;
   -webkit-appearance: none;
   padding: 0;
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.2px;
-  color: #9aa4c0;
-  background: var(--bg-soft);
+  color: #1c1a17;
+  background: #f0eee8;
+  opacity: 0.55;
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-  transition: transform 0.15s, background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  transition: transform 0.15s, opacity 0.15s, box-shadow 0.15s;
   z-index: 2;
 }
 .pf-akuza-badge:active { transform: scale(0.88); }
 .pf-akuza-badge.has {
-  width: 36px;
-  height: 36px;
-  font-size: 15px;
-  color: #3a2308;
-  background: radial-gradient(circle at 32% 26%, #ffe9b8, #ffb92e 42%, #d9720f 85%);
-  border: 2px solid var(--card);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.4), 0 0 14px rgba(255,185,46,0.65), inset 0 2px 3px rgba(255,255,255,0.5);
+  opacity: 1;
+  font-size: 13px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+}
+/* Svijetla tema: bijeli krug bi se izgubio na bijeloj kartici, ali potpuni
+   crni krug (var(--text)) je preagresivan - koristi blaži, topli neutralni ton */
+html[data-theme="light"] .pf-akuza-badge {
+  background: var(--border-soft);
+  color: var(--dim);
+  opacity: 1;
+}
+html[data-theme="light"] .pf-akuza-badge.has {
+  background: var(--border);
+  color: var(--text);
 }
 
 .pf-label {
@@ -1742,7 +1750,7 @@ const DEFAULT_TARGET = 41;
 const SAVE_KEY   = 'treseta_saves_v2';
 const AUTO_KEY   = 'treseta_auto_v2';
 const NAMES_KEY  = 'treseta_names_v1';
-const APP_VERSION = '1.41';
+const APP_VERSION = '1.43';
 
 // ===================== STATE =====================
 let G = null; // game state
