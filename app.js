@@ -775,7 +775,42 @@ function drawResultCanvas(data) {
   const gameRowH = 30;
   const gamesH = data.games.length * gameRowH;
   const bottomPad = 26;
-  const w = 640;
+
+  const TITLE_FONT = '700 34px Arial, sans-serif';
+  const DATE_FONT = '500 16px Arial, sans-serif';
+  const NAME_FONT_W = '700 22px Arial, sans-serif';
+  const NAME_FONT = '600 22px Arial, sans-serif';
+  const SCORE_FONT = '700 30px Arial, sans-serif';
+  const GLABEL_FONT = '700 13px Arial, sans-serif';
+  const GNAME_FONT = '600 15px Arial, sans-serif';
+  const GSCORE_FONT = '700 16px Arial, sans-serif';
+  const ROW_GAP = 40; // minimalni razmak između lijevog i desnog stupca
+
+  // Pomoćni canvas za mjerenje širine teksta prije određivanja konačne širine slike
+  const mctx = document.createElement('canvas').getContext('2d');
+  const measure = (text, font) => { mctx.font = font; return mctx.measureText(text).width; };
+
+  let contentW = measure('TREŠETA — rezultat', TITLE_FONT);
+  contentW = Math.max(contentW, measure(data.dateTimeStr, DATE_FONT));
+  data.rows.forEach((r, i) => {
+    const isWinner = i === 0;
+    const nameW = measure((isWinner ? '🏆 ' : '') + r.name, isWinner ? NAME_FONT_W : NAME_FONT);
+    const scoreW = measure(String(r.score), SCORE_FONT);
+    contentW = Math.max(contentW, nameW + scoreW + ROW_GAP);
+  });
+  if (data.games.length) {
+    contentW = Math.max(contentW, measure('REZULTATI PO PARTIJAMA', GLABEL_FONT));
+    data.games.forEach((scores, i) => {
+      const nameW = measure(`Partija ${i+1}`, GNAME_FONT);
+      const scoreW = measure(scores.join(' : '), GSCORE_FONT);
+      contentW = Math.max(contentW, nameW + scoreW + ROW_GAP);
+    });
+  }
+
+  const sidePad = 32;
+  const w = Math.round(Math.min(640, Math.max(380, contentW + sidePad * 2)));
+  const left = sidePad;
+  const right = w - sidePad;
   const h = headerH + teamsH + gamesHeaderH + gamesH + bottomPad;
 
   const canvas = document.createElement('canvas');
@@ -791,11 +826,11 @@ function drawResultCanvas(data) {
 
   ctx.textAlign = 'center';
   ctx.fillStyle = '#ffffff';
-  ctx.font = '700 34px Arial, sans-serif';
+  ctx.font = TITLE_FONT;
   ctx.fillText('TREŠETA — rezultat', w/2, 52);
 
   ctx.fillStyle = '#7a85a0';
-  ctx.font = '500 16px Arial, sans-serif';
+  ctx.font = DATE_FONT;
   ctx.fillText(data.dateTimeStr, w/2, 80);
 
   let y = headerH;
@@ -803,15 +838,15 @@ function drawResultCanvas(data) {
     const isWinner = i === 0;
     ctx.textAlign = 'left';
     ctx.fillStyle = isWinner ? '#ffffff' : '#b0bacf';
-    ctx.font = (isWinner ? '700 ' : '600 ') + '22px Arial, sans-serif';
-    ctx.fillText((isWinner ? '🏆 ' : '') + r.name, 32, y + 30);
+    ctx.font = isWinner ? NAME_FONT_W : NAME_FONT;
+    ctx.fillText((isWinner ? '🏆 ' : '') + r.name, left, y + 30);
     ctx.textAlign = 'right';
     ctx.fillStyle = isWinner ? '#ffc54d' : '#e6e9f0';
-    ctx.font = '700 30px Arial, sans-serif';
-    ctx.fillText(String(r.score), w - 32, y + 32);
+    ctx.font = SCORE_FONT;
+    ctx.fillText(String(r.score), right, y + 32);
     if (i < data.rows.length - 1 || data.games.length) {
       ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-      ctx.beginPath(); ctx.moveTo(32, y + 52); ctx.lineTo(w - 32, y + 52); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(left, y + 52); ctx.lineTo(right, y + 52); ctx.stroke();
     }
     y += rowH;
   });
@@ -819,19 +854,19 @@ function drawResultCanvas(data) {
   if (data.games.length) {
     ctx.textAlign = 'left';
     ctx.fillStyle = '#7a85a0';
-    ctx.font = '700 13px Arial, sans-serif';
+    ctx.font = GLABEL_FONT;
     y += 8;
-    ctx.fillText('REZULTATI PO PARTIJAMA', 32, y);
+    ctx.fillText('REZULTATI PO PARTIJAMA', left, y);
     y += 22;
     data.games.forEach((scores, i) => {
       ctx.textAlign = 'left';
       ctx.fillStyle = '#b0bacf';
-      ctx.font = '600 15px Arial, sans-serif';
-      ctx.fillText(`Partija ${i+1}`, 32, y);
+      ctx.font = GNAME_FONT;
+      ctx.fillText(`Partija ${i+1}`, left, y);
       ctx.textAlign = 'right';
       ctx.fillStyle = '#e6e9f0';
-      ctx.font = '700 16px Arial, sans-serif';
-      ctx.fillText(scores.join(' : '), w - 32, y);
+      ctx.font = GSCORE_FONT;
+      ctx.fillText(scores.join(' : '), right, y);
       y += gameRowH;
     });
   }
