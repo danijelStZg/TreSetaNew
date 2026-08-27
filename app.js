@@ -750,18 +750,24 @@ function buildShareData() {
     rows = [...G.teams].sort((a,b) => G.lowWins ? a.score - b.score : b.score - a.score).map(t => ({ name: t.name, score: t.score, suffix: '' }));
   }
   const winnerName = (document.getElementById('winnerName') || {}).textContent || (rows[0] && rows[0].name) || '';
-  return { rows, winnerName, roundsCount: G.rounds.length };
-}
-
-function buildShareText(data) {
-  const lines = [`🏆 TREŠETA — pobjednik: ${data.winnerName}`, ''];
-  data.rows.forEach((r, i) => lines.push(`${i+1}. ${r.name} — ${r.score}${r.suffix ? ' ' + r.suffix : ''}`));
-  lines.push('', `${data.roundsCount} rundi odigrano`);
-  return lines.join('\n');
+  const d = new Date();
+  const p = n => String(n).padStart(2,'0');
+  const dateTimeStr = `${p(d.getDate())}.${p(d.getMonth()+1)}.${d.getFullYear()}. ${p(d.getHours())}:${p(d.getMinutes())}`;
+  const games = (G.matchHistory || []).map(g => (g.teams || []).map(t => t.score));
+  return { rows, winnerName, dateTimeStr, games };
 }
 
 function drawResultCanvas(data) {
-  const w = 640, h = 120 + data.rows.length * 64 + 90;
+  const headerH = 118;               // naslov + datum/vrijeme
+  const rowH = 64;
+  const teamsH = data.rows.length * rowH;
+  const gamesHeaderH = data.games.length ? 40 : 0;
+  const gameRowH = 30;
+  const gamesH = data.games.length * gameRowH;
+  const bottomPad = 26;
+  const w = 640;
+  const h = headerH + teamsH + gamesHeaderH + gamesH + bottomPad;
+
   const canvas = document.createElement('canvas');
   canvas.width = w; canvas.height = h;
   const ctx = canvas.getContext('2d');
@@ -776,9 +782,13 @@ function drawResultCanvas(data) {
   ctx.textAlign = 'center';
   ctx.fillStyle = '#ffffff';
   ctx.font = '700 34px Arial, sans-serif';
-  ctx.fillText('TREŠETA — rezultat', w/2, 56);
+  ctx.fillText('TREŠETA — rezultat', w/2, 52);
 
-  let y = 100;
+  ctx.fillStyle = '#7a85a0';
+  ctx.font = '500 16px Arial, sans-serif';
+  ctx.fillText(data.dateTimeStr, w/2, 80);
+
+  let y = headerH;
   data.rows.forEach((r, i) => {
     const isWinner = i === 0;
     ctx.textAlign = 'left';
@@ -789,17 +799,32 @@ function drawResultCanvas(data) {
     ctx.fillStyle = isWinner ? '#ffc54d' : '#e6e9f0';
     ctx.font = '700 30px Arial, sans-serif';
     ctx.fillText(String(r.score), w - 32, y + 32);
-    if (i < data.rows.length - 1) {
+    if (i < data.rows.length - 1 || data.games.length) {
       ctx.strokeStyle = 'rgba(255,255,255,0.08)';
       ctx.beginPath(); ctx.moveTo(32, y + 52); ctx.lineTo(w - 32, y + 52); ctx.stroke();
     }
-    y += 64;
+    y += rowH;
   });
 
-  ctx.textAlign = 'center';
-  ctx.fillStyle = '#7a85a0';
-  ctx.font = '500 16px Arial, sans-serif';
-  ctx.fillText(`${data.roundsCount} rundi odigrano`, w/2, h - 26);
+  if (data.games.length) {
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#7a85a0';
+    ctx.font = '700 13px Arial, sans-serif';
+    y += 8;
+    ctx.fillText('REZULTATI PO PARTIJAMA', 32, y);
+    y += 22;
+    data.games.forEach((scores, i) => {
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#b0bacf';
+      ctx.font = '600 15px Arial, sans-serif';
+      ctx.fillText(`Partija ${i+1}`, 32, y);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#e6e9f0';
+      ctx.font = '700 16px Arial, sans-serif';
+      ctx.fillText(scores.join(' : '), w - 32, y);
+      y += gameRowH;
+    });
+  }
 
   return canvas;
 }
@@ -817,44 +842,34 @@ function roundRectPath(ctx, x, y, w, h, r) {
 async function shareMatchResult() {
   if (!G) return;
   const data = buildShareData();
-  const text = buildShareText(data);
   let blob = null;
   try {
     const canvas = drawResultCanvas(data);
     blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
   } catch (e) { blob = null; }
 
+  if (!blob) { showToast('Generiranje slike nije uspjelo'); return; }
+
   try {
-    if (blob && navigator.canShare) {
+    if (navigator.canShare) {
       const file = new File([blob], 'treseta-rezultat.png', { type: 'image/png' });
       if (navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'Trešeta — rezultat', text });
+        await navigator.share({ files: [file] }); // samo slika, bez teksta
         return;
       }
-    }
-    if (navigator.share) {
-      await navigator.share({ title: 'Trešeta — rezultat', text });
-      return;
     }
   } catch (e) {
     if (e && e.name === 'AbortError') return; // korisnik odustao — ne radi ništa dalje
   }
 
-  // Fallback bez Web Share API-ja: preuzmi sliku (ako je uspjela) i kopiraj tekst
+  // Fallback bez Web Share API-ja (ili bez podrške za dijeljenje datoteka): preuzmi sliku
   try {
-    if (blob) {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = 'treseta-rezultat.png';
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-    }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(text);
-      showToast(blob ? 'Slika preuzeta, tekst kopiran ✓' : 'Rezultat kopiran u međuspremnik');
-    } else {
-      showToast(blob ? 'Slika preuzeta ✓' : 'Dijeljenje nije podržano na ovom uređaju');
-    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'treseta-rezultat.png';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    showToast('Slika preuzeta ✓');
   } catch (e) {
     showToast('Dijeljenje nije uspjelo');
   }
