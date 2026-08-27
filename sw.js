@@ -12,6 +12,8 @@ const CACHE_VERSION = 'treseta-v50';
 const PRECACHE_URLS = [
   './',
   './index.html',
+  './style.css',
+  './app.js',
   './manifest.json',
   './cards.png',
   './icon-120.png',
