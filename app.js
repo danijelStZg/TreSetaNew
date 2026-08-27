@@ -740,20 +740,30 @@ function commitRound(totals) {
 }
 
 // ===================== FAZA 2: DIJELI REZULTAT =====================
-function buildShareData() {
-  const wn = winsNeeded();
+// state: objekt partije (živi G ili spremljeni s.state iz povijesti), ts: opcionalna oznaka vremena spremanja
+function buildShareData(state, ts) {
+  const wn = state.winsNeeded || 1;
+  const teams = state.teams;
+  const matchWins = state.matchWins || teams.map(()=>0);
   let rows;
   if (wn > 1) {
-    const sorted = [...G.teams].sort((a,b) => (G.matchWins[b.id]||0) - (G.matchWins[a.id]||0));
-    rows = sorted.map(t => ({ name: t.name, score: (G.matchWins[t.id]||0), suffix: (G.matchWins[t.id]||0) === 1 ? 'partija' : 'partije' }));
+    const sorted = [...teams].sort((a,b) => (matchWins[b.id]||0) - (matchWins[a.id]||0));
+    rows = sorted.map(t => ({ name: t.name, score: (matchWins[t.id]||0), suffix: (matchWins[t.id]||0) === 1 ? 'partija' : 'partije' }));
   } else {
-    rows = [...G.teams].sort((a,b) => G.lowWins ? a.score - b.score : b.score - a.score).map(t => ({ name: t.name, score: t.score, suffix: '' }));
+    rows = [...teams].sort((a,b) => state.lowWins ? a.score - b.score : b.score - a.score).map(t => ({ name: t.name, score: t.score, suffix: '' }));
   }
-  const winnerName = (document.getElementById('winnerName') || {}).textContent || (rows[0] && rows[0].name) || '';
-  const d = new Date();
-  const p = n => String(n).padStart(2,'0');
-  const dateTimeStr = `${p(d.getDate())}.${p(d.getMonth()+1)}.${d.getFullYear()}. ${p(d.getHours())}:${p(d.getMinutes())}`;
-  const games = (G.matchHistory || []).map(g => (g.teams || []).map(t => t.score));
+  const winnerName = (rows[0] && rows[0].name) || '';
+  let dateTimeStr;
+  if (ts) {
+    const d = new Date(ts);
+    const p = n => String(n).padStart(2,'0');
+    dateTimeStr = `${p(d.getDate())}.${p(d.getMonth()+1)}.${d.getFullYear()}. ${p(d.getHours())}:${p(d.getMinutes())}`;
+  } else {
+    const d = new Date();
+    const p = n => String(n).padStart(2,'0');
+    dateTimeStr = `${p(d.getDate())}.${p(d.getMonth()+1)}.${d.getFullYear()}. ${p(d.getHours())}:${p(d.getMinutes())}`;
+  }
+  const games = (state.matchHistory || []).map(g => (g.teams || []).map(t => t.score));
   return { rows, winnerName, dateTimeStr, games };
 }
 
@@ -839,9 +849,10 @@ function roundRectPath(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-async function shareMatchResult() {
-  if (!G) return;
-  const data = buildShareData();
+async function shareMatchResult(state, ts) {
+  state = state || G;
+  if (!state) return;
+  const data = buildShareData(state, ts);
   let blob = null;
   try {
     const canvas = drawResultCanvas(data);
@@ -1525,7 +1536,7 @@ document.getElementById('rulesClose').onclick = ()=>{ closeM('rulesModal'); open
 document.getElementById('newAfterWin').onclick = ()=>{ closeM('winnerModal'); G=null; openSetup(); };
 document.getElementById('menuAfterWin').onclick = ()=>{ closeM('winnerModal'); G=null; openM('menuModal'); };
 document.getElementById('nextGameBtn').onclick = ()=>{ closeM('gameWinnerModal'); nextGameInMatch(); };
-document.getElementById('shareResultBtn').onclick = shareMatchResult;
+document.getElementById('shareResultBtn').onclick = () => shareMatchResult();
 
 document.getElementById('confirmYes').onclick = ()=>{ closeM('confirmModal'); if(_confirmOk){_confirmOk(); _confirmOk=null;} };
 document.getElementById('confirmNo').onclick  = ()=>{ closeM('confirmModal'); _confirmOk=null; _confirmExtra=null; };
@@ -1695,13 +1706,16 @@ function renderMatchHistoryList() {
     const ib = document.createElement('button');
     ib.className='sl-btn r small'; ib.textContent='ⓘ'; ib.title='Kompletno kretanje rezultata';
     ib.onclick = () => openMatchDetail(s);
+    const sb = document.createElement('button');
+    sb.className='sl-btn r small'; sb.textContent='📤'; sb.title='Podijeli rezultat';
+    sb.onclick = () => shareMatchResult(s.state, s.ts);
     const db = document.createElement('button');
     db.className='sl-btn d small'; db.textContent='✕'; db.title='Obriši';
     db.onclick=()=>openConfirm({title:'Obrisati?',msg:`Obrisati povijest "${s.name}"?`,
       onOk:()=>{ setSaves(getSaves().filter(x=>x.name!==s.name)); renderMatchHistoryList(); }});
     const actions = document.createElement('div');
     actions.className = 'saved-actions';
-    actions.appendChild(ib); actions.appendChild(db);
+    actions.appendChild(ib); actions.appendChild(sb); actions.appendChild(db);
     row.appendChild(actions);
     wrap.appendChild(row);
   });
